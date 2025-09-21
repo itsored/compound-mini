@@ -132,46 +132,41 @@ export async function waitForTelegramTransaction(hash: `0x${string}`, timeout = 
 		return await publicClient.waitForTransactionReceipt({ hash, timeout })
 	}
 	
-	// In Telegram, use a different approach
+	// In Telegram, prefer polling the provider directly (more reliable on mobile)
 	const provider = detectWalletProvider()
 	if (!provider) {
 		throw new Error("No wallet provider available for transaction waiting")
 	}
-	
-	console.log("🔍 [TELEGRAM] Using wallet provider for transaction waiting")
-	
-	// Create a wallet-backed client for transaction waiting
-	const walletPublicClient = createPublicClient({ 
-		chain, 
-		transport: custom(provider) 
-	})
-	
-	// Wait for transaction with extended timeout for mobile
-	try {
-		const receipt = await walletPublicClient.waitForTransactionReceipt({ 
-			hash, 
-			timeout,
-			confirmations: 1
-		})
-		console.log("🔍 [TELEGRAM] Transaction confirmed:", hash)
-		return receipt
-	} catch (error) {
-		console.log("🔍 [TELEGRAM] Wallet client waiting failed, trying fallback")
-		
-		// If wallet client fails, try the direct RPC as fallback
+
+	// Portable polling loop using eth_getTransactionReceipt
+	const start = Date.now()
+	const pollInterval = 1200
+	const hardTimeout = Math.max(timeout, 60000)
+	while (true) {
 		try {
-			const receipt = await publicClient.waitForTransactionReceipt({ 
-				hash, 
-				timeout: timeout / 2, // Shorter timeout for fallback
-				confirmations: 1
-			})
-			console.log("🔍 [TELEGRAM] Transaction confirmed via fallback:", hash)
-			return receipt
-		} catch (fallbackError) {
-			console.error("🔍 [TELEGRAM] Both wallet and fallback waiting failed")
-			throw fallbackError
+			const receipt = await provider.request({ method: 'eth_getTransactionReceipt', params: [hash] })
+			if (receipt && receipt.blockNumber) {
+				console.log("🔍 [TELEGRAM] Transaction confirmed via provider polling:", hash)
+				return receipt
+			}
+		} catch (e) {
+			// ignore intermittent provider errors and keep polling
 		}
+		if (Date.now() - start > hardTimeout) {
+			console.log("🔍 [TELEGRAM] Provider polling timed out, trying viem fallback")
+			break
+		}
+		await new Promise(r => setTimeout(r, pollInterval))
 	}
+
+	// Fallback 1: wallet-backed client
+	try {
+		const walletPublicClient = createPublicClient({ chain, transport: custom(provider) })
+		return await walletPublicClient.waitForTransactionReceipt({ hash, timeout: 30000, confirmations: 1 })
+	} catch {}
+
+	// Fallback 2: direct RPC client
+	return await publicClient.waitForTransactionReceipt({ hash, timeout: 20000, confirmations: 1 })
 }
 
 // Use network configuration for contract addresses
