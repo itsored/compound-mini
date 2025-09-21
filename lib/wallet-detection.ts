@@ -1,4 +1,5 @@
 // Enhanced wallet detection for Telegram and mobile browsers
+
 export function detectWalletProvider() {
   if (typeof window === "undefined") return null
   
@@ -27,7 +28,6 @@ export function detectWalletProvider() {
       (window as any).wallet?.ethereum,
       (window as any).metaMask,
       (window as any).Telegram?.WebApp?.ethereum,
-      (window as any).Telegram?.WebApp?.wallet?.ethereum,
     ]
     
     for (const provider of possibleProviders) {
@@ -45,7 +45,7 @@ export function detectWalletProvider() {
   return null
 }
 
-export async function waitForWalletProvider(timeout = 15000, interval = 500): Promise<any> {
+export async function waitForWalletProvider(timeout = 10000, interval = 200): Promise<any> {
   return new Promise((resolve, reject) => {
     const startTime = Date.now()
     
@@ -100,5 +100,35 @@ export function validateWalletProvider(provider: any): boolean {
   } catch (error) {
     console.log("🔍 [WALLET] Provider validation error:", error)
     return false
+  }
+}
+
+// Telegram-specific wallet detection with enhanced retry logic
+export async function detectTelegramWallet(): Promise<any> {
+  if (typeof window === "undefined") return null
+  
+  console.log("🔍 [TELEGRAM] Starting Telegram wallet detection...")
+  
+  // Check if we're in Telegram
+  if (!(window as any).Telegram?.WebApp) {
+    console.log("🔍 [TELEGRAM] Not in Telegram environment")
+    return null
+  }
+  
+  // Try immediate detection
+  let provider = detectWalletProvider()
+  if (provider) {
+    console.log("🔍 [TELEGRAM] Immediate wallet detection successful")
+    return provider
+  }
+  
+  // Wait for wallet with longer timeout for Telegram
+  try {
+    provider = await waitForWalletProvider(20000, 500) // 20 seconds, check every 500ms
+    console.log("🔍 [TELEGRAM] Wallet detected after waiting")
+    return provider
+  } catch (error) {
+    console.log("🔍 [TELEGRAM] Wallet not detected within timeout")
+    return null
   }
 }
