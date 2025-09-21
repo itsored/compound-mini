@@ -122,6 +122,58 @@ export function getWalletPublicClient() {
 	}
 }
 
+// Telegram-specific transaction waiting
+export async function waitForTelegramTransaction(hash: `0x${string}`, timeout = 60000): Promise<any> {
+	console.log("🔍 [TELEGRAM] Waiting for transaction:", hash)
+	
+	if (typeof window === 'undefined' || !(window as any).Telegram?.WebApp) {
+		// Not in Telegram, use regular client
+		console.log("🔍 [TELEGRAM] Not in Telegram, using regular client")
+		return await publicClient.waitForTransactionReceipt({ hash, timeout })
+	}
+	
+	// In Telegram, use a different approach
+	const provider = detectWalletProvider()
+	if (!provider) {
+		throw new Error("No wallet provider available for transaction waiting")
+	}
+	
+	console.log("🔍 [TELEGRAM] Using wallet provider for transaction waiting")
+	
+	// Create a wallet-backed client for transaction waiting
+	const walletPublicClient = createPublicClient({ 
+		chain, 
+		transport: custom(provider) 
+	})
+	
+	// Wait for transaction with extended timeout for mobile
+	try {
+		const receipt = await walletPublicClient.waitForTransactionReceipt({ 
+			hash, 
+			timeout,
+			confirmations: 1
+		})
+		console.log("🔍 [TELEGRAM] Transaction confirmed:", hash)
+		return receipt
+	} catch (error) {
+		console.log("🔍 [TELEGRAM] Wallet client waiting failed, trying fallback")
+		
+		// If wallet client fails, try the direct RPC as fallback
+		try {
+			const receipt = await publicClient.waitForTransactionReceipt({ 
+				hash, 
+				timeout: timeout / 2, // Shorter timeout for fallback
+				confirmations: 1
+			})
+			console.log("🔍 [TELEGRAM] Transaction confirmed via fallback:", hash)
+			return receipt
+		} catch (fallbackError) {
+			console.error("🔍 [TELEGRAM] Both wallet and fallback waiting failed")
+			throw fallbackError
+		}
+	}
+}
+
 // Use network configuration for contract addresses
 export const COMET_ADDRESS = networkConfig.cometAddress
 export const USDC_ADDRESS = networkConfig.usdcAddress
@@ -225,7 +277,7 @@ export async function withdraw(asset: `0x${string}`, to: `0x${string}`, amount: 
 }
 
 export async function repay(asset: `0x${string}`, to: `0x${string}`, amount: bigint) {
-  console.log("🔍 [DEBUG] Repaying asset:", asset, "to:", to, "amount:", amount)
+  console.log("�� [DEBUG] Repaying asset:", asset, "to:", to, "amount:", amount)
   const walletClient = await getWalletClient()
   const hash = await walletClient.writeContract({
     address: COMET_ADDRESS as `0x${string}`,
