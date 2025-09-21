@@ -19,7 +19,6 @@ import { useAccount } from "wagmi"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply } from "@/lib/comet-onchain"
-import { checkBalanceAfterTransaction, waitForBlockConfirmation } from "@/lib/simple-debug"
 import { parseUnits } from "viem"
 import erc20Abi from "@/lib/abis/erc20.json"
 import cometAbi from "@/lib/abis/comet.json"
@@ -49,89 +48,47 @@ export function SupplyForm() {
   }, [isConnected, address])
 
   const loadWethBalance = async () => {
+    if (!address) return
     try {
-      if (!address) return
-      const balance = (await publicClient.readContract({
+      const balance = await publicClient.readContract({
         address: WETH_ADDRESS as `0x${string}`,
         abi: erc20Abi as any,
         functionName: "balanceOf",
-        args: [address as `0x${string}`],
-      })) as bigint
+        args: [address as `0x${string}`]
+      })
       setWethBalance(Number(balance) / 1e18)
     } catch (error) {
       console.error("Error loading WETH balance:", error)
-      setWethBalance(0)
     }
   }
 
   const loadCollateral = async () => {
+    if (!address) return
     try {
-      if (!address) return
-      const collateral = (await publicClient.readContract({
+      const balance = await publicClient.readContract({
         address: COMET_ADDRESS as `0x${string}`,
         abi: cometAbi as any,
         functionName: "collateralBalanceOf",
-        args: [address as `0x${string}`, WETH_ADDRESS as `0x${string}`],
-      })) as bigint
-      setCollateralBalance(Number(collateral) / 1e18)
+        args: [address as `0x${string}`, WETH_ADDRESS as `0x${string}`]
+      })
+      setCollateralBalance(Number(balance) / 1e18)
     } catch (error) {
-      console.error("Error loading collateral:", error)
-      setCollateralBalance(0)
+      console.error("Error loading collateral balance:", error)
     }
   }
 
   const loadSupplyApy = async () => {
     try {
-      const utilization = (await publicClient.readContract({
-        address: COMET_ADDRESS as `0x${string}`,
-        abi: cometAbi as any,
-        functionName: "getUtilization",
-        args: [],
-      })) as bigint
-      const supplyRate = (await publicClient.readContract({
+      const rate = await publicClient.readContract({
         address: COMET_ADDRESS as `0x${string}`,
         abi: cometAbi as any,
         functionName: "getSupplyRate",
-        args: [utilization],
-      })) as bigint
-      const secondsPerYear = 31536000
-      const apy = (Number(supplyRate) / 1e18) * secondsPerYear * 100
-      setSupplyApy(apy)
+        args: [WETH_ADDRESS as `0x${string}`]
+      })
+      setSupplyApy(Number(rate) / 1e18 * 100)
     } catch (error) {
       console.error("Error loading supply APY:", error)
-      setSupplyApy(0)
     }
-  }
-
-  if (!mounted) return null
-
-  if (!isConnected) {
-    return (
-      <div className="p-4 pb-24">
-        <Card className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 border-blue-500/20 text-white">
-          <CardContent className="p-8 text-center">
-            <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <PiggyBank className="h-10 w-10 text-blue-400" />
-            </div>
-            <h2 className="text-2xl font-semibold mb-3">Connect Your Wallet</h2>
-            <p className="text-gray-400 mb-6">
-              Connect your wallet to start supplying WETH and earning interest.
-            </p>
-            <Button 
-              size="lg" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12"
-            >
-              <PiggyBank className="h-5 w-5 mr-2" />
-              Connect Wallet to Supply
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  const handleMaxClick = () => {
-    setAmount(wethBalance.toString())
   }
 
   const handleSupply = async () => {
@@ -167,14 +124,14 @@ export function SupplyForm() {
         showLoading("Approving WETH...")
         console.log("🔍 [DEBUG] About to approve with wallet client")
         const approveHash = await viemApprove(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, COMET_ADDRESS as `0x${string}`, value)
-        await waitForBlockConfirmation(publicClient, approveHash as `0x${string}`)
+        await publicClient.waitForTransactionReceipt({ hash: approveHash as `0x${string}` })
         console.log("🔍 [DEBUG] Approval transaction confirmed")
         showSuccess("Approval successful", "WETH approved for Compound Mini.")
       }
 
       showLoading("Supplying WETH...")
       const supplyHash = await viemSupply(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, value)
-      await waitForBlockConfirmation(publicClient, supplyHash as `0x${string}`)
+      await publicClient.waitForTransactionReceipt({ hash: supplyHash as `0x${string}` })
       console.log("🔍 [DEBUG] Supply transaction confirmed")
 
       console.log("🔍 [DEBUG] Transaction confirmed, updating local state...")
@@ -187,6 +144,7 @@ export function SupplyForm() {
       try {
         const evt = new Event('onchain:updated')
         window.dispatchEvent(evt)
+        console.log("🔍 [DEBUG] Event dispatched successfully")
       } catch (error) {
         console.error("🔍 [DEBUG] Error dispatching event:", error)
       }
@@ -279,74 +237,60 @@ export function SupplyForm() {
             <p className="text-gray-400">Earn interest on your WETH assets</p>
           </div>
 
-          {/* Amount Input */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium">Amount</label>
-              <span className="text-xs text-gray-400">
-                Balance: {wethBalance.toFixed(4)} WETH
-              </span>
-            </div>
-            <div className="relative">
-              <Input
-                type="number"
-                placeholder="0.0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="bg-[#252836] border-[#2a2d36] text-white text-lg h-14 pr-20"
-              />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-3 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
-                  onClick={handleMaxClick}
-                >
-                  MAX
-                </Button>
-                <div className="flex items-center gap-1 text-sm text-gray-400">
-                  <Image 
-                    src="/weth-icon.png" 
-                    alt="WETH" 
-                    width={16} 
-                    height={16} 
-                    className="rounded-full"
-                  />
-                  <span>WETH</span>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Amount to Supply
+              </label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  placeholder="0.0"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="bg-[#2a2d36] border-[#3a3d46] text-white placeholder-gray-500 pr-20"
+                  disabled={isSubmitting}
+                />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">
+                    WETH
+                  </Badge>
                 </div>
               </div>
             </div>
+
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Available:</span>
+              <span className="text-white">{wethBalance.toFixed(4)} WETH</span>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAmount(wethBalance.toString())}
+              className="w-full border-[#3a3d46] text-gray-300 hover:bg-[#3a3d46]"
+              disabled={isSubmitting}
+            >
+              Use Max
+            </Button>
           </div>
 
-          {/* Supply Preview */}
+          {/* Projected Earnings */}
           {amount && Number(amount) > 0 && (
-            <Card className="bg-[#252836] border-[#2a2d36]">
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-blue-400" />
-                  <span className="text-sm font-medium">Supply Preview</span>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Supply APY</span>
-                    <span className="text-green-400 font-medium">
-                      {supplyApy > 0 ? `${supplyApy.toFixed(2)}%` : 'Loading...'}
-                    </span>
+            <Card className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-blue-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-blue-400" />
+                    <span className="text-sm font-medium text-blue-300">Projected Annual Earnings</span>
                   </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Projected Annual Earnings</span>
-                    <span className="text-white font-medium">
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-blue-400">
                       {projectedEarnings.toFixed(4)} WETH
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">USD Value</span>
-                    <span className="text-white font-medium">
-                      ${(Number(amount) * 3000).toFixed(2)}
-                    </span>
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {supplyApy.toFixed(2)}% APY
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -355,56 +299,49 @@ export function SupplyForm() {
 
           {/* Supply Button */}
           <Button
-            className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white h-14 text-lg font-semibold"
             onClick={handleSupply}
-            disabled={!isConnected || !amount || Number.parseFloat(amount) <= 0 || Number.parseFloat(amount) > wethBalance || isSubmitting}
+            disabled={!amount || Number.parseFloat(amount) <= 0 || isSubmitting}
+            className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold"
           >
             {isSubmitting ? (
-              <div className="flex items-center">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                Processing Supply...
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Supplying...
               </div>
             ) : (
-              <div className="flex items-center">
-                <PiggyBank className="h-5 w-5 mr-3" />
-                Supply {amount || '0'} WETH
-                <ArrowRight className="h-5 w-5 ml-3" />
+              <div className="flex items-center gap-2">
+                <PiggyBank className="h-5 w-5" />
+                Supply WETH
+                <ArrowRight className="h-4 w-4" />
               </div>
             )}
           </Button>
 
-          {/* Benefits Section */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-white">Why Supply WETH?</h3>
-            <div className="grid grid-cols-1 gap-3">
-              <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <CheckCircle className="h-6 w-6 text-green-400" />
-                  <div>
-                    <h4 className="font-semibold">Earn Interest</h4>
-                    <p className="text-sm text-gray-400">Start earning {supplyApy > 0 ? `${supplyApy.toFixed(2)}%` : 'variable'} APY on your WETH immediately.</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <Shield className="h-6 w-6 text-blue-400" />
-                  <div>
-                    <h4 className="font-semibold">Use as Collateral</h4>
-                    <p className="text-sm text-gray-400">Supplied WETH can be used as collateral to borrow other assets.</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <Zap className="h-6 w-6 text-purple-400" />
-                  <div>
-                    <h4 className="font-semibold">Flexible Supply</h4>
-                    <p className="text-sm text-gray-400">Supply any amount and withdraw anytime (subject to health factor).</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+          {/* Info Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 border-blue-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className="h-5 w-5 text-blue-400" />
+                  <span className="text-sm font-medium text-blue-300">Security</span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Your assets are secured by Compound's battle-tested smart contracts.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-green-900/20 to-blue-900/20 border-green-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="h-5 w-5 text-green-400" />
+                  <span className="text-sm font-medium text-green-300">Instant</span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Start earning interest immediately after supplying.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </CardContent>
       </Card>
