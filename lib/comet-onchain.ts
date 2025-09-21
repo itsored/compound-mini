@@ -48,7 +48,7 @@ export async function getWalletClient() {
 	if (!provider && (window as any).Telegram?.WebApp) {
 		console.log("🔍 [DEBUG] Waiting for wallet provider in Telegram...")
 		try {
-			provider = await waitForWalletProvider(8000) // Wait up to 8 seconds
+			provider = await waitForWalletProvider(15000) // Wait up to 15 seconds for Telegram
 		} catch (error) {
 			console.log("🔍 [DEBUG] Wallet provider not found within timeout")
 			throw new Error("Wallet not available in Telegram. Please ensure your wallet is connected and try again.")
@@ -81,15 +81,47 @@ export async function getWalletClient() {
 	return walletClient
 }
 
-export function getWalletPublicClient() {
-	try {
-		if (typeof window === 'undefined') return null
-		const provider = detectWalletProvider()
-		if (!provider) return null
-		return createPublicClient({ chain, transport: custom(provider) })
-	} catch {
-		return null
+export async function getWalletPublicClient() {
+	console.log("�� [DEBUG] Creating wallet-backed public client for chain:", chain.id)
+	console.log("🔍 [DEBUG] Chain name:", chain.name)
+	console.log("🔍 [DEBUG] RPC URL:", rpcUrl)
+	
+	if (typeof window === "undefined") {
+		throw new Error("wallet-backed public client only available in browser")
 	}
+	
+	// Try to detect wallet provider immediately
+	let provider = detectWalletProvider()
+	
+	// If not found and we're in Telegram, wait for it
+	if (!provider && (window as any).Telegram?.WebApp) {
+		console.log("🔍 [DEBUG] Waiting for wallet provider in Telegram for public client...")
+		try {
+			provider = await waitForWalletProvider(15000) // Wait up to 15 seconds for Telegram
+		} catch (error) {
+			console.log("🔍 [DEBUG] Wallet provider not found within timeout for public client")
+			throw new Error("Wallet not available in Telegram. Please ensure your wallet is connected and try again.")
+		}
+	}
+	
+	if (!provider) {
+		throw new Error("No wallet detected. Please install or enable a wallet (e.g. MetaMask)")
+	}
+	
+	// Validate the provider
+	if (!validateWalletProvider(provider)) {
+		throw new Error("Invalid wallet provider detected. Please try reconnecting your wallet.")
+	}
+	
+	console.log("🔍 [DEBUG] Using wallet provider for public client:", provider)
+	
+	// Create public client with wallet provider transport
+	const walletPublicClient = createPublicClient({ 
+		chain, 
+		transport: custom(provider)
+	})
+	
+	return walletPublicClient
 }
 
 // Use network configuration for contract addresses
@@ -109,77 +141,77 @@ export async function getBaseBalances(account: `0x${string}`) {
 export async function getRates() {
 	const util = (await publicClient.readContract({ address: COMET_ADDRESS, abi: cometAbi, functionName: "getUtilization" })) as bigint
 	const [supplyRate, borrowRate] = (await Promise.all([
-		publicClient.readContract({ address: COMET_ADDRESS, abi: cometAbi, functionName: "getSupplyRate", args: [util] }),
-		publicClient.readContract({ address: COMET_ADDRESS, abi: cometAbi, functionName: "getBorrowRate", args: [util] }),
+		publicClient.readContract({ address: COMET_ADDRESS, abi: cometAbi, functionName: "getSupplyRate" }),
+		publicClient.readContract({ address: COMET_ADDRESS, abi: cometAbi, functionName: "getBorrowRate" }),
 	])) as [bigint, bigint]
 	return { utilization: util, supplyRate, borrowRate }
 }
 
-export async function approve(asset: `0x${string}`, owner: `0x${string}`, spender: `0x${string}`, amount: bigint) {
-	console.log("🔍 [DEBUG] Approving token:", asset, "for amount:", amount)
+export async function approve(tokenAddress: `0x${string}`, owner: `0x${string}`, spender: `0x${string}`, amount: bigint) {
+	console.log("🔍 [DEBUG] Approving token:", tokenAddress, "for amount:", amount)
 	const walletClient = await getWalletClient()
-	const hash = await walletClient.writeContract({ 
-		address: asset, 
-		abi: erc20Abi, 
-		functionName: "approve", 
-		args: [spender, amount], 
-		account: owner 
+	const hash = await walletClient.writeContract({
+		address: tokenAddress,
+		abi: erc20Abi,
+		functionName: "approve",
+		args: [spender, amount],
+		account: owner,
 	})
 	console.log("🔍 [DEBUG] Approve transaction hash:", hash)
 	return hash
 }
 
-export async function supply(asset: `0x${string}`, account: `0x${string}`, amount: bigint) {
-	console.log("🔍 [DEBUG] Supplying asset:", asset, "from:", account, "amount:", amount)
+export async function supply(asset: `0x${string}`, from: `0x${string}`, amount: bigint) {
+	console.log("🔍 [DEBUG] Supplying asset:", asset, "from:", from, "amount:", amount)
 	const walletClient = await getWalletClient()
-	const hash = await walletClient.writeContract({ 
-		address: COMET_ADDRESS, 
-		abi: cometAbi, 
-		functionName: "supply", 
-		args: [asset, amount], 
-		account 
+	const hash = await walletClient.writeContract({
+		address: COMET_ADDRESS as `0x${string}`,
+		abi: cometAbi,
+		functionName: "supply",
+		args: [asset, amount],
+		account: from,
 	})
 	console.log("🔍 [DEBUG] Supply transaction hash:", hash)
 	return hash
 }
 
-export async function withdraw(asset: `0x${string}`, account: `0x${string}`, amount: bigint) {
-	console.log("🔍 [DEBUG] Withdrawing asset:", asset, "to:", account, "amount:", amount)
+export async function borrow(asset: `0x${string}`, from: `0x${string}`, amount: bigint) {
+	console.log("🔍 [DEBUG] Borrowing asset:", asset, "from:", from, "amount:", amount)
 	const walletClient = await getWalletClient()
-	const hash = await walletClient.writeContract({ 
-		address: COMET_ADDRESS, 
-		abi: cometAbi, 
-		functionName: "withdraw", 
-		args: [asset, amount], 
-		account 
-	})
-	console.log("🔍 [DEBUG] Withdraw transaction hash:", hash)
-	return hash
-}
-
-export async function borrow(asset: `0x${string}`, account: `0x${string}`, amount: bigint) {
-	console.log("🔍 [DEBUG] Borrowing asset:", asset, "from:", account, "amount:", amount)
-	const walletClient = await getWalletClient()
-	const hash = await walletClient.writeContract({ 
-		address: COMET_ADDRESS, 
-		abi: cometAbi, 
-		functionName: "borrow", 
-		args: [asset, amount], 
-		account 
+	const hash = await walletClient.writeContract({
+		address: COMET_ADDRESS as `0x${string}`,
+		abi: cometAbi,
+		functionName: "borrow",
+		args: [asset, amount],
+		account: from,
 	})
 	console.log("🔍 [DEBUG] Borrow transaction hash:", hash)
 	return hash
 }
 
-export async function repay(asset: `0x${string}`, account: `0x${string}`, amount: bigint) {
-	console.log("🔍 [DEBUG] Repaying asset:", asset, "to:", account, "amount:", amount)
+export async function withdraw(asset: `0x${string}`, to: `0x${string}`, amount: bigint) {
+	console.log("🔍 [DEBUG] Withdrawing asset:", asset, "to:", to, "amount:", amount)
 	const walletClient = await getWalletClient()
-	const hash = await walletClient.writeContract({ 
-		address: COMET_ADDRESS, 
-		abi: cometAbi, 
-		functionName: "repay", 
-		args: [asset, amount], 
-		account 
+	const hash = await walletClient.writeContract({
+		address: COMET_ADDRESS as `0x${string}`,
+		abi: cometAbi,
+		functionName: "withdraw",
+		args: [asset, amount],
+		account: to,
+	})
+	console.log("🔍 [DEBUG] Withdraw transaction hash:", hash)
+	return hash
+}
+
+export async function repay(asset: `0x${string}`, to: `0x${string}`, amount: bigint) {
+	console.log("🔍 [DEBUG] Repaying asset:", asset, "to:", to, "amount:", amount)
+	const walletClient = await getWalletClient()
+	const hash = await walletClient.writeContract({
+		address: COMET_ADDRESS as `0x${string}`,
+		abi: cometAbi,
+		functionName: "repay",
+		args: [asset, amount],
+		account: to,
 	})
 	console.log("🔍 [DEBUG] Repay transaction hash:", hash)
 	return hash

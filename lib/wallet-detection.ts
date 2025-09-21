@@ -27,6 +27,7 @@ export function detectWalletProvider() {
       (window as any).wallet?.ethereum,
       (window as any).metaMask,
       (window as any).Telegram?.WebApp?.ethereum,
+      (window as any).Telegram?.WebApp?.wallet?.ethereum,
     ]
     
     for (const provider of possibleProviders) {
@@ -44,7 +45,7 @@ export function detectWalletProvider() {
   return null
 }
 
-export async function waitForWalletProvider(timeout = 10000, interval = 200): Promise<any> {
+export async function waitForWalletProvider(timeout = 15000, interval = 500): Promise<any> {
   return new Promise((resolve, reject) => {
     const startTime = Date.now()
     
