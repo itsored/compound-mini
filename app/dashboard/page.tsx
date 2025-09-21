@@ -7,7 +7,7 @@ import { motion } from "framer-motion"
 
 export default function DashboardPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center bg-bg-primary">
+    <main className="flex min-h-screen flex-col items-center brand-gradient text-text-primary">
       <div className="w-full max-w-md">
         {/* Header with Wallet Connect */}
         <motion.div 

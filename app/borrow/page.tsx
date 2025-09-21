@@ -4,7 +4,7 @@ import { WalletConnect } from "@/components/wallet-connect"
 
 export default function BorrowPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center bg-gradient-to-b from-bg-primary via-bg-primary to-bg-secondary/40 text-text-primary">
+    <main className="flex min-h-screen flex-col items-center brand-gradient text-text-primary">
       <div className="w-full max-w-md px-4 pb-24 space-y-5">
         {/* Header with Wallet Connect */}
         <div className="pt-4">

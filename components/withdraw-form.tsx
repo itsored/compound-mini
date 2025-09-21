@@ -161,11 +161,11 @@ export function WithdrawForm() {
         <Card className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 border-blue-500/20 text-white">
           <CardContent className="p-8 text-center">
             <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <ArrowUpRight className="h-12 w-12 text-blue-400" />
+              <ArrowUpRight className="h-12 w-12 text-emerald-400" />
             </div>
-            <h2 className="text-3xl font-bold text-blue-400 mb-3">Withdraw Successful!</h2>
+            <h2 className="text-3xl font-bold text-emerald-400 mb-3">Withdraw Successful!</h2>
             <p className="text-xl text-white mb-2">
-              You have withdrawn <span className="font-bold text-blue-400">{amount} WETH</span>
+              You have withdrawn <span className="font-bold text-emerald-400">{amount} WETH</span>
             </p>
             <p className="text-gray-400 mb-6">
               Supply rate: {supplyApy.toFixed(2)}% APY
@@ -211,7 +211,7 @@ export function WithdrawForm() {
   if (!isConnected) {
     return (
       <div className="p-4">
-        <Card className="bg-[#1a1d26] border-[#2a2d36] text-white text-center py-8">
+        <Card className="brand-card text-white text-center py-8">
           <CardHeader>
             <Image src="/weth-icon.png" alt="WETH" width={60} height={60} className="mx-auto mb-4" />
             <CardTitle className="text-2xl">Connect Wallet to Withdraw</CardTitle>
@@ -227,7 +227,7 @@ export function WithdrawForm() {
   return (
     <div className="p-4 space-y-4 pb-24">
       {/* Current Position Card */}
-      <Card className="bg-gradient-to-r from-blue-800/30 to-purple-800/30 border-blue-500/20 text-white">
+      <Card className="brand-card text-white">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -247,7 +247,7 @@ export function WithdrawForm() {
             </div>
           </div>
           
-          <div className="flex items-center justify-between pt-4 border-t border-blue-500/20">
+          <div className="flex items-center justify-between pt-4 border-t border-border-primary">
             <div className="flex items-center gap-3">
               <Image src="/weth-icon.png" alt="WETH" width={24} height={24} className="rounded-full" />
               <div>
@@ -268,7 +268,7 @@ export function WithdrawForm() {
       </Card>
 
       {/* Withdraw Form */}
-      <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+      <Card className="brand-card text-white">
         <CardHeader>
           <CardTitle className="text-xl">Withdraw WETH</CardTitle>
           <CardDescription className="text-gray-400">
@@ -288,7 +288,7 @@ export function WithdrawForm() {
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="bg-[#252836] border-[#2a2d36] pr-20 h-14 text-lg"
+                className="bg-bg-tertiary/50 border-border-primary pr-20 h-14 text-lg"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 <Image src="/weth-icon.png" alt="WETH" width={20} height={20} className="rounded-full" />
@@ -296,7 +296,7 @@ export function WithdrawForm() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 text-xs text-blue-400 hover:text-blue-300"
+                  className="h-8 text-xs text-emerald-400 hover:text-emerald-300"
                   onClick={handleMaxClick}
                 >
                   MAX
@@ -333,7 +333,7 @@ export function WithdrawForm() {
           </div>
 
           <Button
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-12 text-lg font-semibold"
+            className="w-full brand-button-primary text-white h-12 text-lg font-semibold"
             onClick={handleWithdraw}
             disabled={!isConnected || isSubmitting || !amount || Number.parseFloat(amount) <= 0 || collateralBalance <= 0 || Number.parseFloat(amount) > collateralBalance}
           >
@@ -356,7 +356,7 @@ export function WithdrawForm() {
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-white">Withdraw Considerations</h3>
         <div className="grid grid-cols-1 gap-3">
-          <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+          <Card className="brand-card text-white">
             <CardContent className="p-4 flex items-center gap-3">
               <TrendingUp className="h-6 w-6 text-yellow-400" />
               <div>
@@ -365,16 +365,16 @@ export function WithdrawForm() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+          <Card className="brand-card text-white">
             <CardContent className="p-4 flex items-center gap-3">
-              <Shield className="h-6 w-6 text-blue-400" />
+              <Shield className="h-6 w-6 text-emerald-400" />
               <div>
                 <h4 className="font-semibold">Health Factor Impact</h4>
                 <p className="text-sm text-gray-400">Withdrawing reduces your collateral and may lower health factor.</p>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+          <Card className="brand-card text-white">
             <CardContent className="p-4 flex items-center gap-3">
               <Zap className="h-6 w-6 text-purple-400" />
               <div>

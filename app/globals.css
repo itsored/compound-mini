@@ -190,4 +190,25 @@
   .compound-shadow-colored-purple {
     box-shadow: 0 4px 14px 0 rgba(168, 85, 247, 0.25);
   }
+  .brand-gradient {
+    background: radial-gradient(1200px 600px at 50% -10%, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.06) 35%, transparent 70%),
+                linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(13,15,20,1) 35%, rgba(26,29,38,1) 100%);
+  }
+  .brand-card {
+    background: linear-gradient(180deg, rgba(26,29,38,0.9) 0%, rgba(26,29,38,0.8) 100%);
+    border: 1px solid var(--compound-border-primary);
+    box-shadow: 0 10px 30px rgba(16,185,129,0.08);
+  }
+  .brand-button-primary {
+    background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+    color: #fff;
+  }
+  .brand-button-primary:hover { filter: brightness(0.95); }
+  .brand-button-secondary {
+    background: linear-gradient(90deg, rgba(100,116,139,0.3) 0%, rgba(71,85,105,0.3) 100%);
+    color: var(--compound-text-primary);
+  }
+  .text-glow {
+    text-shadow: 0 2px 18px rgba(16,185,129,0.35);
+  }
 }

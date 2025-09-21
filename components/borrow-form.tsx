@@ -164,7 +164,7 @@ export function BorrowForm() {
   if (borrowSuccess) {
     return (
       <div className="p-4 pb-24">
-        <Card className="bg-gradient-to-br from-yellow-900/20 to-red-900/20 border-yellow-500/20 text-white">
+        <Card className="brand-card text-white">
           <CardContent className="p-8 text-center">
             <div className="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <ArrowDownRight className="h-12 w-12 text-yellow-400" />
@@ -211,7 +211,7 @@ export function BorrowForm() {
   if (!isConnected) {
     return (
       <div className="p-4">
-        <Card className="bg-[#1a1d26] border-[#2a2d36] text-white text-center py-8">
+        <Card className="brand-card text-white text-center py-8">
           <CardHeader>
             <Image src="/usdc-icon.webp" alt="USDC" width={60} height={60} className="mx-auto mb-4" />
             <CardTitle className="text-2xl">Connect Wallet to Borrow</CardTitle>
@@ -227,7 +227,7 @@ export function BorrowForm() {
   return (
     <div className="p-4 space-y-4 pb-24">
       {/* Current Position Card */}
-      <Card className="bg-gradient-to-r from-yellow-800/30 to-red-800/30 border-yellow-500/20 text-white">
+      <Card className="brand-card text-white">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -248,7 +248,7 @@ export function BorrowForm() {
           </div>
           
           {borrowBalance > 0 && (
-            <div className="flex items-center justify-between pt-4 border-t border-yellow-500/20">
+            <div className="flex items-center justify-between pt-4 border-t border-border-primary">
               <div className="flex items-center gap-3">
                 <Image src="/usdc-icon.webp" alt="USDC" width={24} height={24} className="rounded-full" />
                 <div>
@@ -264,7 +264,7 @@ export function BorrowForm() {
       </Card>
 
       {/* Borrow Form */}
-      <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+      <Card className="brand-card text-white">
         <CardHeader>
           <CardTitle className="text-xl">Borrow USDC</CardTitle>
           <CardDescription className="text-gray-400">
@@ -284,7 +284,7 @@ export function BorrowForm() {
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="bg-[#252836] border-[#2a2d36] pr-20 h-14 text-lg"
+                className="bg-bg-tertiary/50 border-border-primary pr-20 h-14 text-lg"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 <Image src="/usdc-icon.webp" alt="USDC" width={20} height={20} className="rounded-full" />
@@ -292,7 +292,7 @@ export function BorrowForm() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 text-xs text-blue-400 hover:text-blue-300"
+                  className="h-8 text-xs text-emerald-400 hover:text-emerald-300"
                   onClick={handleMaxClick}
                 >
                   MIN
@@ -323,7 +323,7 @@ export function BorrowForm() {
           </div>
 
           <Button
-            className="w-full bg-gradient-to-r from-yellow-600 to-red-600 hover:from-yellow-700 hover:to-red-700 text-white h-12 text-lg font-semibold"
+            className="w-full brand-button-primary text-white h-12 text-lg font-semibold"
             onClick={handleBorrow}
             disabled={!isConnected || isSubmitting || !amount || Number.parseFloat(amount) <= 0 || collateralBalance <= 0}
           >
@@ -346,7 +346,7 @@ export function BorrowForm() {
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-white">Why Borrow USDC?</h3>
         <div className="grid grid-cols-1 gap-3">
-          <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+          <Card className="brand-card text-white">
             <CardContent className="p-4 flex items-center gap-3">
               <CheckCircle className="h-6 w-6 text-yellow-400" />
               <div>
@@ -355,16 +355,16 @@ export function BorrowForm() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+          <Card className="brand-card text-white">
             <CardContent className="p-4 flex items-center gap-3">
-              <Shield className="h-6 w-6 text-blue-400" />
+              <Shield className="h-6 w-6 text-emerald-400" />
               <div>
                 <h4 className="font-semibold">Maintain Exposure</h4>
                 <p className="text-sm text-gray-400">Keep your WETH position while accessing cash.</p>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+          <Card className="brand-card text-white">
             <CardContent className="p-4 flex items-center gap-3">
               <Zap className="h-6 w-6 text-purple-400" />
               <div>

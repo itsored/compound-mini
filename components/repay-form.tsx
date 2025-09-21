@@ -211,7 +211,7 @@ export function RepayForm() {
   if (repaySuccess) {
     return (
       <div className="p-4 pb-24">
-        <Card className="bg-gradient-to-br from-red-900/20 to-orange-900/20 border-red-500/20 text-white">
+        <Card className="brand-card text-white">
           <CardContent className="p-8 text-center">
             <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <ArrowDownLeft className="h-12 w-12 text-red-400" />
@@ -264,7 +264,7 @@ export function RepayForm() {
   if (!isConnected) {
     return (
       <div className="p-4">
-        <Card className="bg-[#1a1d26] border-[#2a2d36] text-white text-center py-8">
+        <Card className="brand-card text-white text-center py-8">
           <CardHeader>
             <Image src="/usdc-icon.webp" alt="USDC" width={60} height={60} className="mx-auto mb-4" />
             <CardTitle className="text-2xl">Connect Wallet to Repay</CardTitle>
@@ -280,7 +280,7 @@ export function RepayForm() {
   return (
     <div className="p-4 space-y-4 pb-24">
       {/* Current Position Card */}
-      <Card className="bg-gradient-to-r from-red-800/30 to-orange-800/30 border-red-500/20 text-white">
+      <Card className="brand-card text-white">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -300,7 +300,7 @@ export function RepayForm() {
             </div>
           </div>
           
-          <div className="flex items-center justify-between pt-4 border-t border-red-500/20">
+          <div className="flex items-center justify-between pt-4 border-t border-border-primary">
             <div className="flex items-center gap-3">
               <Image src="/usdc-icon.webp" alt="USDC" width={24} height={24} className="rounded-full" />
               <div>
@@ -321,7 +321,7 @@ export function RepayForm() {
       </Card>
 
       {/* Repay Form */}
-      <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+      <Card className="brand-card text-white">
         <CardHeader>
           <CardTitle className="text-xl">Repay USDC</CardTitle>
           <CardDescription className="text-gray-400">
@@ -341,7 +341,7 @@ export function RepayForm() {
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="bg-[#252836] border-[#2a2d36] pr-20 h-14 text-lg"
+                className="bg-bg-tertiary/50 border-border-primary pr-20 h-14 text-lg"
                 disabled={isLoading}
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -390,7 +390,7 @@ export function RepayForm() {
           </div>
 
           <Button
-            className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white h-12 text-lg font-semibold"
+            className="w-full brand-button-primary text-white h-12 text-lg font-semibold"
             onClick={handleRepay}
             disabled={!isConnected || isLoading || !amount || Number.parseFloat(amount) <= 0 || Number.parseFloat(amount) > Math.min(usdcBalance, borrowBalance)}
           >
@@ -413,7 +413,7 @@ export function RepayForm() {
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-white">Repay Benefits</h3>
         <div className="grid grid-cols-1 gap-3">
-          <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+          <Card className="brand-card text-white">
             <CardContent className="p-4 flex items-center gap-3">
               <TrendingDown className="h-6 w-6 text-green-400" />
               <div>
@@ -422,16 +422,16 @@ export function RepayForm() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+          <Card className="brand-card text-white">
             <CardContent className="p-4 flex items-center gap-3">
-              <Shield className="h-6 w-6 text-blue-400" />
+              <Shield className="h-6 w-6 text-emerald-400" />
               <div>
                 <h4 className="font-semibold">Improve Health Factor</h4>
                 <p className="text-sm text-gray-400">Repaying reduces debt and improves your health factor.</p>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
+          <Card className="brand-card text-white">
             <CardContent className="p-4 flex items-center gap-3">
               <Zap className="h-6 w-6 text-purple-400" />
               <div>
