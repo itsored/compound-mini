@@ -76,7 +76,7 @@ export function WalletConnect() {
 								try {
 									(window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false })
 								} catch {
-								window.location.href = mmUniversal
+									window.location.href = mmUniversal
 								}
 							}, 400)
 						}

@@ -254,7 +254,7 @@ export async function borrow(asset: `0x${string}`, from: `0x${string}`, amount: 
     account: from,
   })
   console.log("🔍 [DEBUG] Borrow transaction hash:", hash)
-  return hash
+	return hash
 }
 
 export async function withdraw(asset: `0x${string}`, to: `0x${string}`, amount: bigint) {
