@@ -5,6 +5,7 @@ import { hardhat, sepolia } from "viem/chains"
 import cometAbi from "./abis/comet.json"
 import erc20Abi from "./abis/erc20.json"
 import { getCurrentNetworkConfig, getRpcUrl } from "./network-config"
+import { detectWalletProvider, waitForWalletProvider } from "./wallet-detection"
 
 // Get current network configuration
 const networkConfig = getCurrentNetworkConfig()
@@ -31,21 +32,39 @@ const chain = networkConfig.chainId === 31337
 
 export const publicClient = createPublicClient({ chain, transport: http(rpcUrl) })
 
-export function getWalletClient() {
+export async function getWalletClient() {
 	console.log("🔍 [DEBUG] Creating wallet client for chain:", chain.id)
 	console.log("🔍 [DEBUG] Chain name:", chain.name)
 	if (typeof window === "undefined") throw new Error("wallet client only available in browser")
-	const ethereum = (window as any).ethereum
-	if (!ethereum) throw new Error("No wallet detected. Please install or enable a wallet (e.g. MetaMask)")
-	return createWalletClient({ chain, transport: custom(ethereum) })
+	
+	// Try to detect wallet provider immediately
+	let provider = detectWalletProvider()
+	
+	// If not found and we're in Telegram, wait for it
+	if (!provider && (window as any).Telegram?.WebApp) {
+		console.log("🔍 [DEBUG] Waiting for wallet provider in Telegram...")
+		try {
+			provider = await waitForWalletProvider(3000) // Wait up to 3 seconds
+		} catch (error) {
+			console.log("🔍 [DEBUG] Wallet provider not found within timeout")
+			throw new Error("Wallet not available in Telegram. Please ensure your wallet is connected and try again.")
+		}
+	}
+	
+	if (!provider) {
+		throw new Error("No wallet detected. Please install or enable a wallet (e.g. MetaMask)")
+	}
+	
+	console.log("🔍 [DEBUG] Using wallet provider:", provider)
+	return createWalletClient({ chain, transport: custom(provider) })
 }
 
 export function getWalletPublicClient() {
 	try {
 		if (typeof window === 'undefined') return null
-		const ethereum = (window as any).ethereum
-		if (!ethereum) return null
-		return createPublicClient({ chain, transport: custom(ethereum) })
+		const provider = detectWalletProvider()
+		if (!provider) return null
+		return createPublicClient({ chain, transport: custom(provider) })
 	} catch {
 		return null
 	}
@@ -75,14 +94,17 @@ export async function getRates() {
 }
 
 export async function approve(asset: `0x${string}`, owner: `0x${string}`, spender: `0x${string}`, amount: bigint) {
-	const hash = await getWalletClient().writeContract({ address: asset, abi: erc20Abi, functionName: "approve", args: [spender, amount], account: owner })
+	const walletClient = await getWalletClient()
+	const hash = await walletClient.writeContract({ address: asset, abi: erc20Abi, functionName: "approve", args: [spender, amount], account: owner })
 	return hash
 }
 
 export async function supply(asset: `0x${string}`, account: `0x${string}`, amount: bigint) {
-	return await getWalletClient().writeContract({ address: COMET_ADDRESS, abi: cometAbi, functionName: "supply", args: [asset, amount], account })
+	const walletClient = await getWalletClient()
+	return await walletClient.writeContract({ address: COMET_ADDRESS, abi: cometAbi, functionName: "supply", args: [asset, amount], account })
 }
 
 export async function withdraw(asset: `0x${string}`, account: `0x${string}`, amount: bigint) {
-	return await getWalletClient().writeContract({ address: COMET_ADDRESS, abi: cometAbi, functionName: "withdraw", args: [asset, amount], account })
+	const walletClient = await getWalletClient()
+	return await walletClient.writeContract({ address: COMET_ADDRESS, abi: cometAbi, functionName: "withdraw", args: [asset, amount], account })
 } 
