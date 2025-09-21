@@ -5,13 +5,12 @@ A decentralized lending and borrowing application, integrating with Compound Pro
 
 ## Features
 
-- 🏦 **Supply Assets**: Deposit tokens to earn interest
-- 💰 **Borrow Assets**: Borrow against your supplied collateral
-- 📊 **Portfolio Analytics**: Track your lending positions and health factor
-- 🔄 **Real-time Rates**: Live interest rates and market data
-- 🎯 **Health Factor Monitoring**: Automated risk management
-- 🌐 **Multi-Network Support**: Local mainnet fork and Sepolia testnet
-- 📱 **Responsive UI**: Modern, mobile-first design
+-  **Supply Assets**: Deposit tokens to earn interest
+-  **Borrow Assets**: Borrow against your supplied collateral
+-  **Portfolio Analytics**: Track your lending positions and health factor
+-  **Real-time Rates**: Live interest rates and market data
+-  **Health Factor Monitoring**: Automated risk management
+
 
 ## Requirements
 
