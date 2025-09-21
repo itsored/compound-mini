@@ -79,11 +79,17 @@ export function SupplyForm() {
 
   const loadSupplyApy = async () => {
     try {
+      const utilization = await publicClient.readContract({
+        address: COMET_ADDRESS as `0x${string}`,
+        abi: cometAbi as any,
+        functionName: "getUtilization",
+        args: []
+      })
       const rate = await publicClient.readContract({
         address: COMET_ADDRESS as `0x${string}`,
         abi: cometAbi as any,
         functionName: "getSupplyRate",
-        args: [WETH_ADDRESS as `0x${string}`]
+        args: [utilization]
       })
       setSupplyApy(Number(rate) / 1e18 * 100)
     } catch (error) {
@@ -226,7 +232,7 @@ export function SupplyForm() {
                 {wethBalance.toFixed(4)} WETH
               </div>
               <div className="text-sm text-gray-400">Wallet</div>
-              <div className="text-lg font-semibold text-blue-300">
+              <div className="text-lg font-semibold text-emerald-300">
                 {collateralBalance.toFixed(4)} WETH
               </div>
               <div className="text-sm text-gray-400">Supplied</div>
@@ -283,15 +289,15 @@ export function SupplyForm() {
 
           {/* Projected Earnings */}
           {amount && Number(amount) > 0 && (
-            <Card className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-blue-500/20">
+            <Card className="brand-card">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-blue-400" />
-                    <span className="text-sm font-medium text-blue-300">Projected Annual Earnings</span>
+                    <TrendingUp className="h-5 w-5 text-emerald-400" />
+                    <span className="text-sm font-medium text-emerald-300">Projected Annual Earnings</span>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold text-blue-400">
+                    <div className="text-lg font-bold text-emerald-400">
                       {projectedEarnings.toFixed(4)} WETH
                     </div>
                     <div className="text-xs text-gray-400">
@@ -328,8 +334,8 @@ export function SupplyForm() {
             <Card className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 border-blue-500/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Shield className="h-5 w-5 text-blue-400" />
-                  <span className="text-sm font-medium text-blue-300">Security</span>
+                  <Shield className="h-5 w-5 text-emerald-400" />
+                  <span className="text-sm font-medium text-emerald-300">Security</span>
                 </div>
                 <p className="text-xs text-gray-400">
                   Your assets are secured by Compound's battle-tested smart contracts.

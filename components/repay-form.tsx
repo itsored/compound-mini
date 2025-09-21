@@ -94,7 +94,7 @@ export function RepayForm() {
         address: COMET_ADDRESS,
         abi: cometAbi,
         functionName: "getBorrowRate",
-        args: [USDC_ADDRESS],
+        args: [utilization],
       })
       setBorrowRate(Number(formatUnits(rate, 18)) * 100)
 
@@ -121,7 +121,7 @@ export function RepayForm() {
       writeContract({
         address: COMET_ADDRESS,
         abi: cometAbi,
-        functionName: "supply",
+        functionName: "repay",
         args: [USDC_ADDRESS, rawAmount],
       })
     } else if (isConfirmed && hash && step === 'repaying') {
