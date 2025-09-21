@@ -18,7 +18,7 @@ import { useFeedback } from "@/lib/feedback-provider"
 import { useAccount } from "wagmi"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply } from "@/lib/comet-onchain"
+import { publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply, getWalletPublicClient } from "@/lib/comet-onchain"
 import { parseUnits } from "viem"
 import erc20Abi from "@/lib/abis/erc20.json"
 import cometAbi from "@/lib/abis/comet.json"
@@ -120,18 +120,21 @@ export function SupplyForm() {
         args: [address as `0x${string}`, COMET_ADDRESS as `0x${string}`]
       })) as bigint
 
+      const walletBacked = getWalletPublicClient()
+      const receiptClient = walletBacked || publicClient
+
       if (currentAllowance < value) {
         showLoading("Approving WETH...")
         console.log("🔍 [DEBUG] About to approve with wallet client")
         const approveHash = await viemApprove(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, COMET_ADDRESS as `0x${string}`, value)
-        await publicClient.waitForTransactionReceipt({ hash: approveHash as `0x${string}` })
+        await receiptClient.waitForTransactionReceipt({ hash: approveHash as `0x${string}` })
         console.log("🔍 [DEBUG] Approval transaction confirmed")
         showSuccess("Approval successful", "WETH approved for Compound Mini.")
       }
 
       showLoading("Supplying WETH...")
       const supplyHash = await viemSupply(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, value)
-      await publicClient.waitForTransactionReceipt({ hash: supplyHash as `0x${string}` })
+      await receiptClient.waitForTransactionReceipt({ hash: supplyHash as `0x${string}` })
       console.log("🔍 [DEBUG] Supply transaction confirmed")
 
       console.log("🔍 [DEBUG] Transaction confirmed, updating local state...")
