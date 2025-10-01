@@ -54,7 +54,9 @@ const hasInjected = () => {
   }
 }
 
-const shouldIncludeWalletConnect = runtimeHasWindow && !!wcProjectId && (isTelegram || !hasInjected())
+// Always offer WalletConnect on custom (Tenderly) network to avoid injected provider conflicts
+const isCustomNetwork = networkConfig?.name?.toLowerCase().includes('custom')
+const shouldIncludeWalletConnect = runtimeHasWindow && !!wcProjectId && (isTelegram || !hasInjected() || isCustomNetwork)
 
 const connectorsList = [
 	// Prefer generic injected (Rabby, etc.) first, then MetaMask

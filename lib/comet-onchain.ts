@@ -218,12 +218,23 @@ export async function getEthUsdPrice() {
 export async function approve(tokenAddress: `0x${string}`, owner: `0x${string}`, spender: `0x${string}`, amount: bigint) {
   console.log("🔍 [DEBUG] Approving token:", tokenAddress, "for amount:", amount)
   const walletClient = await getWalletClient()
+  // Estimate gas with margin to avoid OOG on forks/providers that under-estimate
+  const estimatedGas = await publicClient.estimateContractGas({
+    address: tokenAddress,
+    abi: erc20Abi,
+    functionName: "approve",
+    args: [spender, amount],
+    account: owner,
+  })
+  const gasWithMargin = (estimatedGas * 120n) / 100n
+
   const hash = await walletClient.writeContract({
     address: tokenAddress,
     abi: erc20Abi,
     functionName: "approve",
     args: [spender, amount],
     account: owner,
+    gas: gasWithMargin,
   })
   console.log("🔍 [DEBUG] Approve transaction hash:", hash)
   return hash
@@ -232,12 +243,23 @@ export async function approve(tokenAddress: `0x${string}`, owner: `0x${string}`,
 export async function supply(asset: `0x${string}`, from: `0x${string}`, amount: bigint) {
   console.log("🔍 [DEBUG] Supplying asset:", asset, "from:", from, "amount:", amount)
   const walletClient = await getWalletClient()
+  // Estimate gas with margin to avoid OOG on forks/providers that under-estimate
+  const estimatedGas = await publicClient.estimateContractGas({
+    address: COMET_ADDRESS as `0x${string}`,
+    abi: cometAbi,
+    functionName: "supply",
+    args: [asset, amount],
+    account: from,
+  })
+  const gasWithMargin = (estimatedGas * 130n) / 100n
+
   const hash = await walletClient.writeContract({
     address: COMET_ADDRESS as `0x${string}`,
     abi: cometAbi,
     functionName: "supply",
     args: [asset, amount],
     account: from,
+    gas: gasWithMargin,
   })
   console.log("🔍 [DEBUG] Supply transaction hash:", hash)
   return hash
@@ -246,12 +268,22 @@ export async function supply(asset: `0x${string}`, from: `0x${string}`, amount: 
 export async function borrow(asset: `0x${string}`, from: `0x${string}`, amount: bigint) {
   console.log("🔍 [DEBUG] Borrowing asset:", asset, "from:", from, "amount:", amount)
   const walletClient = await getWalletClient()
+  const estimatedGas = await publicClient.estimateContractGas({
+    address: COMET_ADDRESS as `0x${string}`,
+    abi: cometAbi,
+    functionName: "borrow",
+    args: [asset, amount],
+    account: from,
+  })
+  const gasWithMargin = (estimatedGas * 130n) / 100n
+
   const hash = await walletClient.writeContract({
     address: COMET_ADDRESS as `0x${string}`,
     abi: cometAbi,
     functionName: "borrow",
     args: [asset, amount],
     account: from,
+    gas: gasWithMargin,
   })
   console.log("🔍 [DEBUG] Borrow transaction hash:", hash)
 	return hash
@@ -260,12 +292,22 @@ export async function borrow(asset: `0x${string}`, from: `0x${string}`, amount: 
 export async function withdraw(asset: `0x${string}`, to: `0x${string}`, amount: bigint) {
   console.log("🔍 [DEBUG] Withdrawing asset:", asset, "to:", to, "amount:", amount)
   const walletClient = await getWalletClient()
+  const estimatedGas = await publicClient.estimateContractGas({
+    address: COMET_ADDRESS as `0x${string}`,
+    abi: cometAbi,
+    functionName: "withdraw",
+    args: [asset, amount],
+    account: to,
+  })
+  const gasWithMargin = (estimatedGas * 130n) / 100n
+
   const hash = await walletClient.writeContract({
     address: COMET_ADDRESS as `0x${string}`,
     abi: cometAbi,
     functionName: "withdraw",
     args: [asset, amount],
     account: to,
+    gas: gasWithMargin,
   })
   console.log("🔍 [DEBUG] Withdraw transaction hash:", hash)
   return hash
@@ -274,12 +316,22 @@ export async function withdraw(asset: `0x${string}`, to: `0x${string}`, amount: 
 export async function repay(asset: `0x${string}`, to: `0x${string}`, amount: bigint) {
   console.log("�� [DEBUG] Repaying asset:", asset, "to:", to, "amount:", amount)
   const walletClient = await getWalletClient()
+  const estimatedGas = await publicClient.estimateContractGas({
+    address: COMET_ADDRESS as `0x${string}`,
+    abi: cometAbi,
+    functionName: "repay",
+    args: [asset, amount],
+    account: to,
+  })
+  const gasWithMargin = (estimatedGas * 130n) / 100n
+
   const hash = await walletClient.writeContract({
     address: COMET_ADDRESS as `0x${string}`,
     abi: cometAbi,
     functionName: "repay",
     args: [asset, amount],
     account: to,
+    gas: gasWithMargin,
   })
   console.log("🔍 [DEBUG] Repay transaction hash:", hash)
   return hash

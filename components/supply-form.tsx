@@ -19,6 +19,7 @@ import { useAccount } from "wagmi"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply, waitForTelegramTransaction } from "@/lib/comet-onchain"
+import { maxUint256 } from "viem"
 import { parseUnits } from "viem"
 import erc20Abi from "@/lib/abis/erc20.json"
 import cometAbi from "@/lib/abis/comet.json"
@@ -128,13 +129,30 @@ export function SupplyForm() {
 
       if (currentAllowance < value) {
         showLoading("Approving WETH...")
-        console.log("🔍 [DEBUG] About to approve with wallet client")
-        const approveHash = await viemApprove(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, COMET_ADDRESS as `0x${string}`, value)
+        console.log("🔍 [DEBUG] About to approve with wallet client (max allowance)")
+        const approveHash = await viemApprove(
+          WETH_ADDRESS as `0x${string}`,
+          address as `0x${string}`,
+          COMET_ADDRESS as `0x${string}`,
+          maxUint256
+        )
         console.log("🔍 [DEBUG] Approve hash:", approveHash)
-        
-        // Use Telegram-specific transaction waiting
+
+        // Wait for confirmation
         await waitForTelegramTransaction(approveHash as `0x${string}`)
-        console.log("🔍 [DEBUG] Approval transaction confirmed")
+        console.log("🔍 [DEBUG] Approval transaction confirmed, re-checking allowance...")
+
+        // Re-check allowance to be safe
+        const postAllowance = (await publicClient.readContract({
+          address: WETH_ADDRESS as `0x${string}`,
+          abi: erc20Abi as any,
+          functionName: "allowance",
+          args: [address as `0x${string}`, COMET_ADDRESS as `0x${string}`]
+        })) as bigint
+        console.log("🔍 [DEBUG] Post-approve allowance:", postAllowance.toString())
+        if (postAllowance < value) {
+          throw new Error("Approval did not register on chain. Please try again.")
+        }
         showSuccess("Approval successful", "WETH approved for Compound Mini.")
       }
 

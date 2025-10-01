@@ -29,6 +29,12 @@ export function MinimalHero() {
   const { connect, connectors, isPending } = useConnect()
   const [userStatus, setUserStatus] = useState<UserStatus | null>(null)
   const [loading, setLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Avoid hydration mismatches: only enable client-variant UI after mount
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const connectDefault = () => {
     const inTelegram = typeof window !== "undefined" && (window as any).Telegram?.WebApp
@@ -178,12 +184,12 @@ export function MinimalHero() {
               Compound Finance
             </h1>
             <p className="text-text-tertiary">
-              {isConnected ? "Your DeFi Gateway" : "DeFi Lending & Borrowing"}
+              {(mounted && isConnected) ? "Your DeFi Gateway" : "DeFi Lending & Borrowing"}
             </p>
           </div>
 
-          {/* Main Content */}
-          {!isConnected ? (
+          {/* Main Content (gate on mount to prevent SSR/CSR mismatch) */}
+          {!(mounted && isConnected) ? (
             <div className="text-center py-8 relative">
                   <div className="w-20 h-20 bg-compound-success-500/15 rounded-full flex items-center justify-center mx-auto mb-6">
                     <Wallet className="h-10 w-10 text-compound-success-400" />
