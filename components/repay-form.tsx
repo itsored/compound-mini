@@ -12,7 +12,8 @@ import { useFeedback } from "@/lib/feedback-provider"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 import { useAccount } from "wagmi"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
+import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS, bringWalletToFrontForSigning } from "@/lib/comet-onchain"
+import { isTelegramEnv } from "@/lib/utils"
 import { parseUnits, formatUnits } from "viem"
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
 
@@ -188,10 +189,19 @@ export function RepayForm() {
         args: [address, COMET_ADDRESS],
       })
 
+      // Foreground wallet within user gesture (Telegram)
+      if (isTelegramEnv()) {
+        bringWalletToFrontForSigning()
+      }
+
       if ((currentAllowance as bigint) < rawAmount) {
         // Need approval first
         setStep('approving')
         showLoading(`Approving ${amount} USDC...`)
+
+        if (isTelegramEnv()) {
+          bringWalletToFrontForSigning({ delay: 150 })
+        }
 
         writeContract({
           address: USDC_ADDRESS,
@@ -203,6 +213,9 @@ export function RepayForm() {
       } else {
         // Already approved, go straight to repay
         setStep('repaying')
+        if (isTelegramEnv()) {
+          bringWalletToFrontForSigning({ delay: 150 })
+        }
         writeContract({
           address: COMET_ADDRESS,
           abi: cometAbi,
