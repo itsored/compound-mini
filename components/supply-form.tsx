@@ -19,6 +19,7 @@ import { useAccount } from "wagmi"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply, waitForTelegramTransaction } from "@/lib/comet-onchain"
+import { isTelegramEnv } from "@/lib/utils"
 import { maxUint256 } from "viem"
 import { parseUnits } from "viem"
 import erc20Abi from "@/lib/abis/erc20.json"
@@ -39,6 +40,20 @@ export function SupplyForm() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  const openWalletForSigning = () => {
+    try {
+      if (typeof window === 'undefined') return
+      if (!isTelegramEnv()) return
+      const ua = navigator.userAgent || ''
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(ua)
+      if (!isMobile) return
+      const tg = (window as any).Telegram?.WebApp
+      const current = window.location.href
+      const dapp = `https://metamask.app.link/dapp/${current.replace(/^https?:\/\//, '')}`
+      tg?.openLink?.(dapp, { try_instant_view: false })
+    } catch {}
+  }
 
   useEffect(() => {
     if (isConnected && address) {
@@ -130,6 +145,8 @@ export function SupplyForm() {
       if (currentAllowance < value) {
         showLoading("Approving WETH...")
         console.log("🔍 [DEBUG] About to approve with wallet client (max allowance)")
+        // Bring wallet to foreground within the original click gesture
+        openWalletForSigning()
         const approveHash = await viemApprove(
           WETH_ADDRESS as `0x${string}`,
           address as `0x${string}`,
@@ -157,6 +174,8 @@ export function SupplyForm() {
       }
 
       showLoading("Supplying WETH...")
+      // Bring wallet to foreground right before signing
+      openWalletForSigning()
       const supplyHash = await viemSupply(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, value)
       console.log("🔍 [DEBUG] Supply hash:", supplyHash)
       
