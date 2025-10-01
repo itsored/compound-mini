@@ -100,8 +100,27 @@ export function WalletConnect() {
 			console.log("🔍 Attempting to connect with:", preferred.id)
 			connect({ connector: preferred })
 		} else {
-			console.log("🔍 Fallback to injected connector")
-			connect({ connector: injected() })
+			console.log("🔍 No connector available; applying Telegram mobile fallback")
+			// Telegram mobile fallback: open in MetaMask app to inject provider
+			if (inTelegram && isMobile) {
+				try {
+					const origin = typeof window !== 'undefined' ? window.location.origin : ''
+					const path = typeof window !== 'undefined' ? window.location.pathname + window.location.search : ''
+					const target = encodeURIComponent(`${origin}${path}`)
+					const deeplink = `metamask://dapp/${target}`
+					const universal = `https://metamask.app.link/dapp/${target}`
+					;(window as any).Telegram?.WebApp?.openLink?.(deeplink, { try_instant_view: false })
+					setTimeout(() => {
+						try {
+							(window as any).Telegram?.WebApp?.openLink?.(universal, { try_instant_view: false })
+						} catch {
+							if (typeof window !== 'undefined') window.location.href = universal
+						}
+					}, 400)
+				} catch {}
+			}
+			// Also attempt injected to surface UI feedback if available
+			try { connect({ connector: injected() }) } catch {}
 		}
 	}
 
