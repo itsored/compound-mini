@@ -22,6 +22,25 @@ export function getLastWalletProvider() {
   return lastWalletProvider
 }
 
+export async function ensureLastWalletProvider() {
+  if (typeof window === 'undefined') return null
+  if (lastWalletProvider) return lastWalletProvider
+
+  try {
+    const connectorClient = await getConnectorClient(wagmiConfig, { chainId: chain.id })
+    const connectorProvider = await connectorClient.connector.getProvider()
+    if (connectorProvider) {
+      lastWalletProvider = connectorProvider
+      console.log("🔍 [DEBUG] ensureLastWalletProvider stored connector provider")
+      return lastWalletProvider
+    }
+  } catch (error) {
+    console.log("🔍 [DEBUG] ensureLastWalletProvider connector fetch failed", error)
+  }
+
+  return lastWalletProvider
+}
+
 // Create chain configuration based on current network
 const chain = networkConfig.chainId === 31337 
   ? hardhat 
@@ -54,8 +73,20 @@ export function bringWalletToFrontForSigning(options?: BringWalletOptions) {
     const tg = w?.Telegram?.WebApp
 
     const provider = options?.providerOverride ?? lastWalletProvider
+    console.log("🔍 [DEBUG] bringWalletToFrontForSigning invoked", {
+      hasTelegram: !!tg,
+      hasProvider: !!provider,
+      delay: options?.delay,
+    })
     const invokeLinks = () => {
       try {
+        const redirectMeta = provider?.session?.peer?.metadata?.redirect || provider?.connector?.session?.peer?.metadata?.redirect
+        if (tg && redirectMeta?.universal) {
+          console.log("🔍 [DEBUG] Using provider universal redirect for Telegram", redirectMeta.universal)
+          tg.openLink(redirectMeta.universal, { try_instant_view: false })
+          return
+        }
+
         if (tg && provider?.session?.peer?.metadata?.redirect?.universal) {
           tg.openLink(provider.session.peer.metadata.redirect.universal, { try_instant_view: false })
           return
@@ -67,6 +98,7 @@ export function bringWalletToFrontForSigning(options?: BringWalletOptions) {
         }
 
         if (tg) {
+          console.log("🔍 [DEBUG] Falling back to MetaMask deep links via Telegram")
           tg.openLink('metamask://', { try_instant_view: false })
           setTimeout(() => {
             try {
@@ -74,6 +106,7 @@ export function bringWalletToFrontForSigning(options?: BringWalletOptions) {
             } catch {}
           }, 300)
         } else {
+          console.log("🔍 [DEBUG] No Telegram context; opening MetaMask deep links via window.open")
           window.open('metamask://', '_blank')
           setTimeout(() => {
             try {

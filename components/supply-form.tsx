@@ -18,7 +18,7 @@ import { useFeedback } from "@/lib/feedback-provider"
 import { useAccount } from "wagmi"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { bringWalletToFrontForSigning, getLastWalletProvider, publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply, waitForTelegramTransaction } from "@/lib/comet-onchain"
+import { bringWalletToFrontForSigning, ensureLastWalletProvider, getLastWalletProvider, publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply, waitForTelegramTransaction } from "@/lib/comet-onchain"
 import { isTelegramEnv } from "@/lib/utils"
 import { maxUint256 } from "viem"
 import { parseUnits } from "viem"
@@ -120,8 +120,10 @@ export function SupplyForm() {
     if (inTelegram) {
       const provider = getLastWalletProvider()
       if (!provider) {
-        console.log("🔍 [DEBUG] No last wallet provider yet, fetching explicitly before bringing to front")
-        bringWalletToFrontForSigning()
+        console.log("🔍 [DEBUG] No last wallet provider yet, attempting to hydrate")
+        ensureLastWalletProvider().then((hydrated) => {
+          bringWalletToFrontForSigning({ providerOverride: hydrated ?? undefined })
+        })
       } else {
         bringWalletToFrontForSigning({ providerOverride: provider })
       }
@@ -156,7 +158,13 @@ export function SupplyForm() {
           )
           if (inTelegram) {
             const provider = getLastWalletProvider()
-            bringWalletToFrontForSigning({ delay: 150, providerOverride: provider })
+            if (provider) {
+              bringWalletToFrontForSigning({ delay: 150, providerOverride: provider })
+            } else {
+              ensureLastWalletProvider().then((hydrated) => {
+                bringWalletToFrontForSigning({ delay: 150, providerOverride: hydrated ?? undefined })
+              })
+            }
           }
           const approveHash = await approvePromise
           console.log("🔍 [DEBUG] Approve hash:", approveHash)
@@ -183,7 +191,13 @@ export function SupplyForm() {
         const supplyPromise = viemSupply(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, value)
         if (inTelegram) {
           const provider = getLastWalletProvider()
-          bringWalletToFrontForSigning({ delay: 150, providerOverride: provider })
+          if (provider) {
+            bringWalletToFrontForSigning({ delay: 150, providerOverride: provider })
+          } else {
+            ensureLastWalletProvider().then((hydrated) => {
+              bringWalletToFrontForSigning({ delay: 150, providerOverride: hydrated ?? undefined })
+            })
+          }
         }
         const supplyHash = await supplyPromise
         console.log("🔍 [DEBUG] Supply hash:", supplyHash)
