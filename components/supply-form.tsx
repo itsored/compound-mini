@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { 
   PiggyBank, 
@@ -18,11 +19,11 @@ import { useFeedback } from "@/lib/feedback-provider"
 import { useAccount } from "wagmi"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply, waitForTelegramTransaction } from "@/lib/comet-onchain"
-import { maxUint256 } from "viem"
-import { parseUnits } from "viem"
+import { publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, waitForTelegramTransaction } from "@/lib/comet-onchain"
 import erc20Abi from "@/lib/abis/erc20.json"
 import cometAbi from "@/lib/abis/comet.json"
+import { parseUnits, maxUint256 } from "viem"
+import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
 
 export function SupplyForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
@@ -35,6 +36,13 @@ export function SupplyForm() {
   const [mounted, setMounted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [supplySuccess, setSupplySuccess] = useState(false)
+  const [step, setStep] = useState<'idle' | 'approving' | 'supplying'>('idle')
+
+  // Wagmi hooks - always called
+  const { writeContract, data: hash, error, isPending } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+  })
 
   useEffect(() => {
     setMounted(true)
@@ -47,6 +55,48 @@ export function SupplyForm() {
       loadSupplyApy()
     }
   }, [isConnected, address])
+
+  // Handle transaction confirmation
+  useEffect(() => {
+    if (isConfirmed && hash && step === 'approving') {
+      // Approval confirmed, now supply
+      setStep('supplying')
+      const value = parseUnits(amount, 18)
+      writeContract({
+        address: COMET_ADDRESS,
+        abi: cometAbi,
+        functionName: "supply",
+        args: [WETH_ADDRESS, value],
+      })
+    } else if (isConfirmed && hash && step === 'supplying') {
+      // Supply confirmed
+      hideLoading()
+      setSupplySuccess(true)
+      setIsSubmitting(false)
+      setStep('idle')
+
+      // Refresh balances
+      loadWethBalance()
+      loadCollateral()
+
+      // Notify other parts of the app
+      try {
+        const evt = new Event('onchain:updated')
+        window.dispatchEvent(evt)
+      } catch {}
+    }
+  }, [isConfirmed, hash, step, amount])
+
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      hideLoading()
+      const msg = error?.shortMessage || error?.reason || error?.message || "Transaction failed"
+      showError("Transaction Failed", msg)
+      setIsSubmitting(false)
+      setStep('idle')
+    }
+  }, [error])
 
   const loadWethBalance = async () => {
     if (!address) return
@@ -98,7 +148,7 @@ export function SupplyForm() {
     }
   }
 
-  const handleSupply = () => {
+  const handleSupply = async () => {
     if (!amount || Number.parseFloat(amount) <= 0) {
       showError("Invalid Amount", "Please enter a valid amount to supply")
       return
@@ -114,94 +164,35 @@ export function SupplyForm() {
       return
     }
 
+    try {
+      setIsSubmitting(true)
+      setStep('approving')
+      showLoading(`Approving ${amount} WETH...`)
 
-    const executeSupply = async () => {
-      try {
-        setIsSubmitting(true)
-        showLoading(`Supplying ${amount} WETH...`)
+      const value = parseUnits(amount, 18)
 
-        console.log("🔍 [DEBUG] Supply transaction - address:", address)
-        console.log("🔍 [DEBUG] Supply transaction - WETH_ADDRESS:", WETH_ADDRESS)
-        console.log("🔍 [DEBUG] Supply transaction - COMET_ADDRESS:", COMET_ADDRESS)
-        const value = parseUnits(amount, 18)
-
-        // Check allowance via readContract
-        const currentAllowance = (await publicClient.readContract({
-          address: WETH_ADDRESS as `0x${string}`,
-          abi: erc20Abi as any,
-          functionName: "allowance",
-          args: [address as `0x${string}`, COMET_ADDRESS as `0x${string}`]
-        })) as bigint
-
-        if (currentAllowance < value) {
-          showLoading("Approving WETH...")
-          console.log("🔍 [DEBUG] About to approve with wallet client (max allowance)")
-          const approveHash = await viemApprove(
-            WETH_ADDRESS as `0x${string}`,
-            address as `0x${string}`,
-            COMET_ADDRESS as `0x${string}`,
-            maxUint256
-          )
-          console.log("🔍 [DEBUG] Approve hash:", approveHash)
-
-          // Wait for confirmation
-          await waitForTelegramTransaction(approveHash as `0x${string}`)
-          console.log("🔍 [DEBUG] Approval transaction confirmed, re-checking allowance...")
-
-          // Re-check allowance to be safe
-          const postAllowance = (await publicClient.readContract({
-            address: WETH_ADDRESS as `0x${string}`,
-            abi: erc20Abi as any,
-            functionName: "allowance",
-            args: [address as `0x${string}`, COMET_ADDRESS as `0x${string}`]
-          })) as bigint
-          console.log("🔍 [DEBUG] Post-approve allowance:", postAllowance.toString())
-          if (postAllowance < value) {
-            throw new Error("Approval did not register on chain. Please try again.")
-          }
-          showSuccess("Approval successful", "WETH approved for Compound Mini.")
-        }
-
-        showLoading("Supplying WETH...")
-        const supplyHash = await viemSupply(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, value)
-        console.log("🔍 [DEBUG] Supply hash:", supplyHash)
-        
-        // Use Telegram-specific transaction waiting
-        await waitForTelegramTransaction(supplyHash as `0x${string}`)
-        console.log("🔍 [DEBUG] Supply transaction confirmed")
-        
-        console.log("🔍 [DEBUG] Transaction confirmed, updating local state...")
-        await Promise.all([loadWethBalance(), loadCollateral()])
-        
-        // Add a small delay to ensure blockchain state has propagated
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        console.log("🔍 [DEBUG] Dispatching onchain:updated event...")
-        try {
-          const evt = new Event('onchain:updated')
-          window.dispatchEvent(evt)
-          console.log("🔍 [DEBUG] Event dispatched successfully")
-        } catch (error) {
-          console.error("🔍 [DEBUG] Error dispatching event:", error)
-        }
-
-        hideLoading()
-        setSupplySuccess(true)
-      } catch (error: any) {
-        hideLoading()
-        const details = error?.cause?.shortMessage || error?.shortMessage || error?.cause?.message || error?.message
-        const fallback = "Transaction failed. If you rejected the request, try again."
-        const msg = details || fallback
-        showError("Supply Failed", msg)
-      } finally {
-        setIsSubmitting(false)
-      }
+      // First approve WETH
+      writeContract({
+        address: WETH_ADDRESS,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [COMET_ADDRESS, maxUint256],
+      })
+    } catch (error: any) {
+      hideLoading()
+      const msg = error?.shortMessage || error?.reason || error?.message || "Transaction failed"
+      showError("Supply Failed", msg)
+      setIsSubmitting(false)
+      setStep('idle')
     }
-
-    executeSupply()
   }
 
   const projectedEarnings = Number(amount) * (supplyApy / 100)
+
+  const isLoading = isPending || isConfirming || isSubmitting
+  const buttonText = step === 'approving' ? 'Approving...' :
+                     step === 'supplying' ? 'Supplying...' :
+                     'Supply WETH'
 
   // Success state
   if (supplySuccess) {
@@ -270,25 +261,29 @@ export function SupplyForm() {
 
       {/* Supply Form */}
       <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
-        <CardContent className="p-6 space-y-6">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Supply WETH</h2>
-            <p className="text-gray-400">Earn interest on your WETH assets</p>
-          </div>
+        <CardHeader>
+          <CardTitle className="text-xl">Supply WETH</CardTitle>
+          <CardDescription className="text-gray-400">
+            Earn interest on your WETH assets.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Amount to Supply
-              </label>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="amount" className="text-gray-300">Amount to Supply</Label>
+                <span className="text-sm text-gray-400">WETH only</span>
+              </div>
               <div className="relative">
                 <Input
+                  id="amount"
                   type="number"
                   placeholder="0.0"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="bg-[#2a2d36] border-[#3a3d46] text-white placeholder-gray-500 pr-20"
-                  disabled={isSubmitting}
+                  className="bg-[#2a2d36] border-[#3a3d46] text-white placeholder-gray-500 pr-20 h-14 text-lg"
+                  disabled={isLoading}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
                   <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">
@@ -307,8 +302,8 @@ export function SupplyForm() {
               variant="outline"
               size="sm"
               onClick={() => setAmount(wethBalance.toString())}
-              className="w-full border-[#3a3d46] text-gray-300 hover:bg-[#3a3d46]"
-              disabled={isSubmitting}
+              className="w-full border-[#3a3d46] text-gray-300 hover:bg-[#3a3d46] h-10"
+              disabled={isLoading}
             >
               Use Max
             </Button>
@@ -338,21 +333,20 @@ export function SupplyForm() {
 
           {/* Supply Button */}
           <Button
+            className="w-full brand-button-primary text-white h-12 text-lg font-semibold"
             onClick={handleSupply}
-            disabled={!amount || Number.parseFloat(amount) <= 0 || isSubmitting}
-            className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold"
+            disabled={!isConnected || isLoading || !amount || Number.parseFloat(amount) <= 0 || Number.parseFloat(amount) > wethBalance}
           >
-            {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Supplying...
+            {isLoading ? (
+              <div className="flex items-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                {buttonText}
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <PiggyBank className="h-5 w-5" />
+              <>
+                <PiggyBank className="mr-2 h-5 w-5" />
                 Supply WETH
-                <ArrowRight className="h-4 w-4" />
-              </div>
+              </>
             )}
           </Button>
 
