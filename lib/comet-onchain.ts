@@ -1,6 +1,8 @@
 "use client"
 
 import { createPublicClient, createWalletClient, http, parseUnits, defineChain, custom } from "viem"
+import { getWalletClient as wagmiGetWalletClient } from "wagmi/actions"
+import { config as wagmiConfig } from "./wagmi-provider"
 import { hardhat, sepolia } from "viem/chains"
 import cometAbi from "./abis/comet.json"
 import erc20Abi from "./abis/erc20.json"
@@ -41,7 +43,18 @@ export async function getWalletClient() {
 	
 	if (typeof window === "undefined") throw new Error("wallet client only available in browser")
 	
-	// Try to detect wallet provider immediately
+  // First, try wagmi's wallet client (works with WalletConnect sessions)
+  try {
+    const wc = await wagmiGetWalletClient(wagmiConfig, { chainId: chain.id })
+    if (wc) {
+      console.log("🔍 [DEBUG] Using wagmi wallet client")
+      return wc
+    }
+  } catch (e) {
+    console.log("🔍 [DEBUG] wagmi getWalletClient failed, falling back to raw provider", e)
+  }
+
+  // Try to detect wallet provider immediately
 	let provider = detectWalletProvider()
 	
 	// If not found and we're in Telegram, wait for it

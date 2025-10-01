@@ -80,7 +80,7 @@ const connectorsList = [
 		: []),
 ]
 
-const config = createConfig({
+export const config = createConfig({
 	chains: [chain],
 	transports: {
 		[chain.id]: http(rpcUrl),
