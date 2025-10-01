@@ -341,6 +341,19 @@ export async function getEthUsdPrice() {
 export async function approve(tokenAddress: `0x${string}`, owner: `0x${string}`, spender: `0x${string}`, amount: bigint) {
   console.log("🔍 [DEBUG] Approving token:", tokenAddress, "for amount:", amount)
   const walletClient = await getWalletClient()
+
+  // Telegram-specific: Force wallet to front RIGHT before signing
+  if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
+    const tg = (window as any).Telegram.WebApp
+    console.log("🔍 [TELEGRAM] Forcing MetaMask to front for approval")
+    tg.openLink('metamask://', { try_instant_view: false })
+    setTimeout(() => {
+      try {
+        tg.openLink('https://metamask.app.link/', { try_instant_view: false })
+      } catch {}
+    }, 200)
+  }
+
   // Estimate gas with margin to avoid OOG on forks/providers that under-estimate
   const estimatedGas = await publicClient.estimateContractGas({
     address: tokenAddress,
@@ -391,6 +404,19 @@ export async function supply(asset: `0x${string}`, from: `0x${string}`, amount: 
 export async function borrow(asset: `0x${string}`, from: `0x${string}`, amount: bigint) {
   console.log("🔍 [DEBUG] Borrowing asset:", asset, "from:", from, "amount:", amount)
   const walletClient = await getWalletClient()
+
+  // Telegram-specific: Force wallet to front RIGHT before signing
+  if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
+    const tg = (window as any).Telegram.WebApp
+    console.log("🔍 [TELEGRAM] Forcing MetaMask to front for borrow")
+    tg.openLink('metamask://', { try_instant_view: false })
+    setTimeout(() => {
+      try {
+        tg.openLink('https://metamask.app.link/', { try_instant_view: false })
+      } catch {}
+    }, 200)
+  }
+
   const estimatedGas = await publicClient.estimateContractGas({
     address: COMET_ADDRESS as `0x${string}`,
     abi: cometAbi,
@@ -415,6 +441,19 @@ export async function borrow(asset: `0x${string}`, from: `0x${string}`, amount: 
 export async function withdraw(asset: `0x${string}`, to: `0x${string}`, amount: bigint) {
   console.log("🔍 [DEBUG] Withdrawing asset:", asset, "to:", to, "amount:", amount)
   const walletClient = await getWalletClient()
+
+  // Telegram-specific: Force wallet to front RIGHT before signing
+  if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
+    const tg = (window as any).Telegram.WebApp
+    console.log("🔍 [TELEGRAM] Forcing MetaMask to front for withdraw")
+    tg.openLink('metamask://', { try_instant_view: false })
+    setTimeout(() => {
+      try {
+        tg.openLink('https://metamask.app.link/', { try_instant_view: false })
+      } catch {}
+    }, 200)
+  }
+
   const estimatedGas = await publicClient.estimateContractGas({
     address: COMET_ADDRESS as `0x${string}`,
     abi: cometAbi,
@@ -437,8 +476,21 @@ export async function withdraw(asset: `0x${string}`, to: `0x${string}`, amount: 
 }
 
 export async function repay(asset: `0x${string}`, to: `0x${string}`, amount: bigint) {
-  console.log("�� [DEBUG] Repaying asset:", asset, "to:", to, "amount:", amount)
+  console.log("🔍 [DEBUG] Repaying asset:", asset, "to:", to, "amount:", amount)
   const walletClient = await getWalletClient()
+
+  // Telegram-specific: Force wallet to front RIGHT before signing
+  if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
+    const tg = (window as any).Telegram.WebApp
+    console.log("🔍 [TELEGRAM] Forcing MetaMask to front for repay")
+    tg.openLink('metamask://', { try_instant_view: false })
+    setTimeout(() => {
+      try {
+        tg.openLink('https://metamask.app.link/', { try_instant_view: false })
+      } catch {}
+    }, 200)
+  }
+
   const estimatedGas = await publicClient.estimateContractGas({
     address: COMET_ADDRESS as `0x${string}`,
     abi: cometAbi,

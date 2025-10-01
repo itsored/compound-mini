@@ -18,8 +18,7 @@ import { useFeedback } from "@/lib/feedback-provider"
 import { useAccount } from "wagmi"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { bringWalletToFrontForSigning, ensureLastWalletProvider, getLastWalletProvider, publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply, waitForTelegramTransaction } from "@/lib/comet-onchain"
-import { isTelegramEnv } from "@/lib/utils"
+import { publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply, waitForTelegramTransaction } from "@/lib/comet-onchain"
 import { maxUint256 } from "viem"
 import { parseUnits } from "viem"
 import erc20Abi from "@/lib/abis/erc20.json"
@@ -115,19 +114,6 @@ export function SupplyForm() {
       return
     }
 
-    // Trigger the wallet foregrounding while we still have the original click gesture
-    const inTelegram = isTelegramEnv()
-    if (inTelegram) {
-      const provider = getLastWalletProvider()
-      if (!provider) {
-        console.log("🔍 [DEBUG] No last wallet provider yet, attempting to hydrate")
-        ensureLastWalletProvider().then((hydrated) => {
-          bringWalletToFrontForSigning({ providerOverride: hydrated ?? undefined })
-        })
-      } else {
-        bringWalletToFrontForSigning({ providerOverride: provider })
-      }
-    }
 
     const executeSupply = async () => {
       try {
@@ -150,23 +136,12 @@ export function SupplyForm() {
         if (currentAllowance < value) {
           showLoading("Approving WETH...")
           console.log("🔍 [DEBUG] About to approve with wallet client (max allowance)")
-          const approvePromise = viemApprove(
+          const approveHash = await viemApprove(
             WETH_ADDRESS as `0x${string}`,
             address as `0x${string}`,
             COMET_ADDRESS as `0x${string}`,
             maxUint256
           )
-          if (inTelegram) {
-            const provider = getLastWalletProvider()
-            if (provider) {
-              bringWalletToFrontForSigning({ delay: 150, providerOverride: provider })
-            } else {
-              ensureLastWalletProvider().then((hydrated) => {
-                bringWalletToFrontForSigning({ delay: 150, providerOverride: hydrated ?? undefined })
-              })
-            }
-          }
-          const approveHash = await approvePromise
           console.log("🔍 [DEBUG] Approve hash:", approveHash)
 
           // Wait for confirmation
@@ -188,18 +163,7 @@ export function SupplyForm() {
         }
 
         showLoading("Supplying WETH...")
-        const supplyPromise = viemSupply(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, value)
-        if (inTelegram) {
-          const provider = getLastWalletProvider()
-          if (provider) {
-            bringWalletToFrontForSigning({ delay: 150, providerOverride: provider })
-          } else {
-            ensureLastWalletProvider().then((hydrated) => {
-              bringWalletToFrontForSigning({ delay: 150, providerOverride: hydrated ?? undefined })
-            })
-          }
-        }
-        const supplyHash = await supplyPromise
+        const supplyHash = await viemSupply(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, value)
         console.log("🔍 [DEBUG] Supply hash:", supplyHash)
         
         // Use Telegram-specific transaction waiting
