@@ -18,7 +18,7 @@ import { useFeedback } from "@/lib/feedback-provider"
 import { useAccount } from "wagmi"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply, waitForTelegramTransaction } from "@/lib/comet-onchain"
+import { bringWalletToFrontForSigning, getLastWalletProvider, publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply, waitForTelegramTransaction } from "@/lib/comet-onchain"
 import { isTelegramEnv } from "@/lib/utils"
 import { maxUint256 } from "viem"
 import { parseUnits } from "viem"
@@ -40,20 +40,6 @@ export function SupplyForm() {
   useEffect(() => {
     setMounted(true)
   }, [])
-
-  const openWalletForSigning = () => {
-    try {
-      if (typeof window === 'undefined') return
-      if (!isTelegramEnv()) return
-      const ua = navigator.userAgent || ''
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(ua)
-      if (!isMobile) return
-      const tg = (window as any).Telegram?.WebApp
-      // Use native MetaMask scheme to open the app directly, not the webview
-      const nativeLink = 'metamask://'
-      tg?.openLink?.(nativeLink, { try_instant_view: false })
-    } catch {}
-  }
 
   useEffect(() => {
     if (isConnected && address) {
@@ -113,7 +99,7 @@ export function SupplyForm() {
     }
   }
 
-  const handleSupply = async () => {
+  const handleSupply = () => {
     if (!amount || Number.parseFloat(amount) <= 0) {
       showError("Invalid Amount", "Please enter a valid amount to supply")
       return
@@ -124,91 +110,109 @@ export function SupplyForm() {
       return
     }
 
-    try {
-      setIsSubmitting(true)
-      showLoading(`Supplying ${amount} WETH...`)
+    if (!address) {
+      showError("Wallet Not Connected", "Please connect your wallet first.")
+      return
+    }
 
-      if (!address) throw new Error("No wallet address")
-      console.log("🔍 [DEBUG] Supply transaction - address:", address)
-      console.log("🔍 [DEBUG] Supply transaction - WETH_ADDRESS:", WETH_ADDRESS)
-      console.log("🔍 [DEBUG] Supply transaction - COMET_ADDRESS:", COMET_ADDRESS)
-      const value = parseUnits(amount, 18)
+    // Trigger the wallet foregrounding while we still have the original click gesture
+    const inTelegram = isTelegramEnv()
+    if (inTelegram) {
+      bringWalletToFrontForSigning({ providerOverride: getLastWalletProvider() })
+    }
 
-      // Check allowance via readContract
-      const currentAllowance = (await publicClient.readContract({
-        address: WETH_ADDRESS as `0x${string}`,
-        abi: erc20Abi as any,
-        functionName: "allowance",
-        args: [address as `0x${string}`, COMET_ADDRESS as `0x${string}`]
-      })) as bigint
+    const executeSupply = async () => {
+      try {
+        setIsSubmitting(true)
+        showLoading(`Supplying ${amount} WETH...`)
 
-      if (currentAllowance < value) {
-        showLoading("Approving WETH...")
-        console.log("🔍 [DEBUG] About to approve with wallet client (max allowance)")
-        // Bring wallet to foreground within the original click gesture
-        openWalletForSigning()
-        const approveHash = await viemApprove(
-          WETH_ADDRESS as `0x${string}`,
-          address as `0x${string}`,
-          COMET_ADDRESS as `0x${string}`,
-          maxUint256
-        )
-        console.log("🔍 [DEBUG] Approve hash:", approveHash)
+        console.log("🔍 [DEBUG] Supply transaction - address:", address)
+        console.log("🔍 [DEBUG] Supply transaction - WETH_ADDRESS:", WETH_ADDRESS)
+        console.log("🔍 [DEBUG] Supply transaction - COMET_ADDRESS:", COMET_ADDRESS)
+        const value = parseUnits(amount, 18)
 
-        // Wait for confirmation
-        await waitForTelegramTransaction(approveHash as `0x${string}`)
-        console.log("🔍 [DEBUG] Approval transaction confirmed, re-checking allowance...")
-
-        // Re-check allowance to be safe
-        const postAllowance = (await publicClient.readContract({
+        // Check allowance via readContract
+        const currentAllowance = (await publicClient.readContract({
           address: WETH_ADDRESS as `0x${string}`,
           abi: erc20Abi as any,
           functionName: "allowance",
           args: [address as `0x${string}`, COMET_ADDRESS as `0x${string}`]
         })) as bigint
-        console.log("🔍 [DEBUG] Post-approve allowance:", postAllowance.toString())
-        if (postAllowance < value) {
-          throw new Error("Approval did not register on chain. Please try again.")
+
+        if (currentAllowance < value) {
+          showLoading("Approving WETH...")
+          console.log("🔍 [DEBUG] About to approve with wallet client (max allowance)")
+          const approvePromise = viemApprove(
+            WETH_ADDRESS as `0x${string}`,
+            address as `0x${string}`,
+            COMET_ADDRESS as `0x${string}`,
+            maxUint256
+          )
+          if (inTelegram) {
+            bringWalletToFrontForSigning({ delay: 150, providerOverride: getLastWalletProvider() })
+          }
+          const approveHash = await approvePromise
+          console.log("🔍 [DEBUG] Approve hash:", approveHash)
+
+          // Wait for confirmation
+          await waitForTelegramTransaction(approveHash as `0x${string}`)
+          console.log("🔍 [DEBUG] Approval transaction confirmed, re-checking allowance...")
+
+          // Re-check allowance to be safe
+          const postAllowance = (await publicClient.readContract({
+            address: WETH_ADDRESS as `0x${string}`,
+            abi: erc20Abi as any,
+            functionName: "allowance",
+            args: [address as `0x${string}`, COMET_ADDRESS as `0x${string}`]
+          })) as bigint
+          console.log("🔍 [DEBUG] Post-approve allowance:", postAllowance.toString())
+          if (postAllowance < value) {
+            throw new Error("Approval did not register on chain. Please try again.")
+          }
+          showSuccess("Approval successful", "WETH approved for Compound Mini.")
         }
-        showSuccess("Approval successful", "WETH approved for Compound Mini.")
+
+        showLoading("Supplying WETH...")
+        const supplyPromise = viemSupply(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, value)
+        if (inTelegram) {
+          bringWalletToFrontForSigning({ delay: 150, providerOverride: getLastWalletProvider() })
+        }
+        const supplyHash = await supplyPromise
+        console.log("🔍 [DEBUG] Supply hash:", supplyHash)
+        
+        // Use Telegram-specific transaction waiting
+        await waitForTelegramTransaction(supplyHash as `0x${string}`)
+        console.log("🔍 [DEBUG] Supply transaction confirmed")
+        
+        console.log("🔍 [DEBUG] Transaction confirmed, updating local state...")
+        await Promise.all([loadWethBalance(), loadCollateral()])
+        
+        // Add a small delay to ensure blockchain state has propagated
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        console.log("🔍 [DEBUG] Dispatching onchain:updated event...")
+        try {
+          const evt = new Event('onchain:updated')
+          window.dispatchEvent(evt)
+          console.log("🔍 [DEBUG] Event dispatched successfully")
+        } catch (error) {
+          console.error("🔍 [DEBUG] Error dispatching event:", error)
+        }
+
+        hideLoading()
+        setSupplySuccess(true)
+      } catch (error: any) {
+        hideLoading()
+        const details = error?.cause?.shortMessage || error?.shortMessage || error?.cause?.message || error?.message
+        const fallback = "Transaction failed. If you rejected the request, try again."
+        const msg = details || fallback
+        showError("Supply Failed", msg)
+      } finally {
+        setIsSubmitting(false)
       }
-
-      showLoading("Supplying WETH...")
-      // Bring wallet to foreground right before signing
-      openWalletForSigning()
-      const supplyHash = await viemSupply(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, value)
-      console.log("🔍 [DEBUG] Supply hash:", supplyHash)
-      
-      // Use Telegram-specific transaction waiting
-      await waitForTelegramTransaction(supplyHash as `0x${string}`)
-      console.log("🔍 [DEBUG] Supply transaction confirmed")
-
-      console.log("🔍 [DEBUG] Transaction confirmed, updating local state...")
-      await Promise.all([loadWethBalance(), loadCollateral()])
-      
-      // Add a small delay to ensure blockchain state has propagated
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      console.log("🔍 [DEBUG] Dispatching onchain:updated event...")
-      try {
-        const evt = new Event('onchain:updated')
-        window.dispatchEvent(evt)
-        console.log("🔍 [DEBUG] Event dispatched successfully")
-      } catch (error) {
-        console.error("🔍 [DEBUG] Error dispatching event:", error)
-      }
-
-      hideLoading()
-      setSupplySuccess(true)
-    } catch (error: any) {
-      hideLoading()
-      const details = error?.cause?.shortMessage || error?.shortMessage || error?.cause?.message || error?.message
-      const fallback = "Transaction failed. If you rejected the request, try again."
-      const msg = details || fallback
-      showError("Supply Failed", msg)
-    } finally {
-      setIsSubmitting(false)
     }
+
+    executeSupply()
   }
 
   const projectedEarnings = Number(amount) * (supplyApy / 100)

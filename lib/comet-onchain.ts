@@ -16,6 +16,12 @@ console.log("🔍 [DEBUG] Network config loaded:", JSON.stringify(networkConfig,
 const rpcUrl = getRpcUrl()
 console.log("🔍 [DEBUG] Using RPC URL:", rpcUrl)
 
+let lastWalletProvider: any = null
+
+export function getLastWalletProvider() {
+  return lastWalletProvider
+}
+
 // Create chain configuration based on current network
 const chain = networkConfig.chainId === 31337 
   ? hardhat 
@@ -36,25 +42,54 @@ const chain = networkConfig.chainId === 31337
 
 export const publicClient = createPublicClient({ chain, transport: http(rpcUrl) })
 
-function bringWalletToFrontForSigning() {
+type BringWalletOptions = {
+  delay?: number
+  providerOverride?: any
+}
+
+export function bringWalletToFrontForSigning(options?: BringWalletOptions) {
   try {
     if (typeof window === 'undefined') return
     const w: any = window as any
     const tg = w?.Telegram?.WebApp
-    // Prefer native MetaMask scheme to simply bring the app to foreground
-    const native = 'metamask://'
-    const fallbackUniversal = 'https://metamask.app.link/'
-    // Use Telegram openLink if available, otherwise window.open
-    if (tg?.openLink) tg.openLink(native, { try_instant_view: false })
-    else window.open(native, '_blank')
-    // If the native scheme is blocked, try universal link as a fallback after a short delay
-    setTimeout(() => {
+
+    const provider = options?.providerOverride ?? lastWalletProvider
+    const invokeLinks = () => {
       try {
-        if (tg?.openLink) tg.openLink(fallbackUniversal, { try_instant_view: false })
-        else window.open(fallbackUniversal, '_blank')
+        if (tg && provider?.session?.peer?.metadata?.redirect?.universal) {
+          tg.openLink(provider.session.peer.metadata.redirect.universal, { try_instant_view: false })
+          return
+        }
+
+        if (typeof provider?.openWallet === 'function') {
+          provider.openWallet()
+          return
+        }
+
+        if (tg) {
+          tg.openLink('metamask://', { try_instant_view: false })
+          setTimeout(() => {
+            try {
+              tg.openLink('https://metamask.app.link/', { try_instant_view: false })
+            } catch {}
+          }, 300)
+        } else {
+          window.open('metamask://', '_blank')
+          setTimeout(() => {
+            try {
+              window.open('https://metamask.app.link/', '_blank')
+            } catch {}
+          }, 300)
+        }
       } catch {}
-    }, 300)
-  } catch {}
+    }
+
+    const delay = options?.delay ?? 0
+    if (delay > 0) setTimeout(invokeLinks, delay)
+    else invokeLinks()
+  } catch (error) {
+    console.log('🔍 [DEBUG] bringWalletToFrontForSigning error', error)
+  }
 }
 
 export async function getWalletClient() {
@@ -115,6 +150,8 @@ export async function getWalletClient() {
 		}
 	}
 	
+	lastWalletProvider = provider
+
 	// Create wallet client with custom transport
 	const walletClient = createWalletClient({ 
 		chain, 
