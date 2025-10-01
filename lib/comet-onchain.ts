@@ -41,10 +41,19 @@ function bringWalletToFrontForSigning() {
     if (typeof window === 'undefined') return
     const w: any = window as any
     const tg = w?.Telegram?.WebApp
-    const universal = 'https://metamask.app.link/'
+    // Prefer native MetaMask scheme to simply bring the app to foreground
+    const native = 'metamask://'
+    const fallbackUniversal = 'https://metamask.app.link/'
     // Use Telegram openLink if available, otherwise window.open
-    if (tg?.openLink) tg.openLink(universal, { try_instant_view: false })
-    else window.open(universal, '_blank')
+    if (tg?.openLink) tg.openLink(native, { try_instant_view: false })
+    else window.open(native, '_blank')
+    // If the native scheme is blocked, try universal link as a fallback after a short delay
+    setTimeout(() => {
+      try {
+        if (tg?.openLink) tg.openLink(fallbackUniversal, { try_instant_view: false })
+        else window.open(fallbackUniversal, '_blank')
+      } catch {}
+    }, 300)
   } catch {}
 }
 
