@@ -1,7 +1,7 @@
 "use client"
 
 import { createPublicClient, createWalletClient, http, parseUnits, defineChain, custom } from "viem"
-import { getWalletClient as wagmiGetWalletClient } from "wagmi/actions"
+import { getWalletClient as wagmiGetWalletClient, getConnectorClient } from "wagmi/actions"
 import { config as wagmiConfig } from "./wagmi-provider"
 import { hardhat, sepolia } from "viem/chains"
 import cometAbi from "./abis/comet.json"
@@ -103,6 +103,25 @@ export async function getWalletClient() {
   try {
     const wc = await wagmiGetWalletClient(wagmiConfig, { chainId: chain.id })
     if (wc) {
+      console.log("🔍 [DEBUG] wagmi wallet client acquired, capturing provider metadata")
+      try {
+        const connectorClient = await getConnectorClient(wagmiConfig, { chainId: chain.id })
+        const connectorProvider = await connectorClient.connector.getProvider()
+        if (connectorProvider) {
+          lastWalletProvider = connectorProvider
+          console.log("🔍 [DEBUG] Stored connector provider from wagmi client")
+        }
+      } catch (connectorError) {
+        console.log("🔍 [DEBUG] Unable to get connector provider, trying transport", connectorError)
+        const transport: any = (wc as any)?.transport
+        if (transport?.value?.request) {
+          lastWalletProvider = transport.value
+          console.log("🔍 [DEBUG] Stored transport.value as last wallet provider")
+        } else if (transport?.request) {
+          lastWalletProvider = transport
+          console.log("🔍 [DEBUG] Stored transport as last wallet provider")
+        }
+      }
       console.log("🔍 [DEBUG] Using wagmi wallet client")
       return wc
     }

@@ -118,7 +118,13 @@ export function SupplyForm() {
     // Trigger the wallet foregrounding while we still have the original click gesture
     const inTelegram = isTelegramEnv()
     if (inTelegram) {
-      bringWalletToFrontForSigning({ providerOverride: getLastWalletProvider() })
+      const provider = getLastWalletProvider()
+      if (!provider) {
+        console.log("🔍 [DEBUG] No last wallet provider yet, fetching explicitly before bringing to front")
+        bringWalletToFrontForSigning()
+      } else {
+        bringWalletToFrontForSigning({ providerOverride: provider })
+      }
     }
 
     const executeSupply = async () => {
@@ -149,7 +155,8 @@ export function SupplyForm() {
             maxUint256
           )
           if (inTelegram) {
-            bringWalletToFrontForSigning({ delay: 150, providerOverride: getLastWalletProvider() })
+            const provider = getLastWalletProvider()
+            bringWalletToFrontForSigning({ delay: 150, providerOverride: provider })
           }
           const approveHash = await approvePromise
           console.log("🔍 [DEBUG] Approve hash:", approveHash)
@@ -175,7 +182,8 @@ export function SupplyForm() {
         showLoading("Supplying WETH...")
         const supplyPromise = viemSupply(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, value)
         if (inTelegram) {
-          bringWalletToFrontForSigning({ delay: 150, providerOverride: getLastWalletProvider() })
+          const provider = getLastWalletProvider()
+          bringWalletToFrontForSigning({ delay: 150, providerOverride: provider })
         }
         const supplyHash = await supplyPromise
         console.log("🔍 [DEBUG] Supply hash:", supplyHash)
