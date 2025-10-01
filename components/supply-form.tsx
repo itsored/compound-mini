@@ -49,9 +49,9 @@ export function SupplyForm() {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(ua)
       if (!isMobile) return
       const tg = (window as any).Telegram?.WebApp
-      const current = window.location.href
-      const dapp = `https://metamask.app.link/dapp/${current.replace(/^https?:\/\//, '')}`
-      tg?.openLink?.(dapp, { try_instant_view: false })
+      // Use native MetaMask scheme to open the app directly, not the webview
+      const nativeLink = 'metamask://'
+      tg?.openLink?.(nativeLink, { try_instant_view: false })
     } catch {}
   }
 
