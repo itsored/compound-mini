@@ -11,7 +11,7 @@ import Image from "next/image"
 import { useFeedback } from "@/lib/feedback-provider"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
-import { useAccount } from "wagmi"
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
 import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
 import { parseUnits } from "viem"
 
@@ -31,6 +31,12 @@ export function BorrowForm() {
   const USDC_DECIMALS = 6
   const USDC_PRICE_USD = 1 // USDC is pegged to USD
 
+  // Wagmi hooks
+  const { writeContract, data: hash, error, isPending } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+  })
+
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -40,6 +46,34 @@ export function BorrowForm() {
       loadBorrowData()
     }
   }, [isConnected, address])
+
+  // Handle transaction confirmation
+  useEffect(() => {
+    if (isConfirmed && hash) {
+      hideLoading()
+      setBorrowSuccess(true)
+      setIsSubmitting(false)
+
+      // Refresh balances
+      loadBorrowData()
+
+      // Notify other parts of the app
+      try {
+        const evt = new Event('onchain:updated')
+        window.dispatchEvent(evt)
+      } catch {}
+    }
+  }, [isConfirmed, hash])
+
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      hideLoading()
+      const msg = error?.shortMessage || error?.reason || error?.message || "Transaction failed"
+      showError("Borrow Failed", msg)
+      setIsSubmitting(false)
+    }
+  }, [error])
 
   const loadBorrowData = async () => {
     try {
@@ -108,36 +142,36 @@ export function BorrowForm() {
       return
     }
 
-    setIsSubmitting(true)
-    showLoading(`Borrowing ${amount} USDC...`)
-
     try {
-      const { ethers } = await import("ethers")
-      if (!(window as any).ethereum) throw new Error("No wallet detected")
-      const provider = new ethers.BrowserProvider((window as any).ethereum)
-      const signer = await provider.getSigner()
+      setIsSubmitting(true)
+      showLoading(`Borrowing ${amount} USDC...`)
 
-      const comet = new ethers.Contract(COMET_ADDRESS, cometAbi as any, signer)
       const rawAmount = parseUnits(amount, USDC_DECIMALS)
 
       // Check minimum borrow
-      const minBorrow = await comet.baseBorrowMin()
-      if (rawAmount < minBorrow) {
+      const minBorrow = await publicClient.readContract({
+        address: COMET_ADDRESS,
+        abi: cometAbi as any,
+        functionName: "baseBorrowMin",
+        args: [],
+      })
+
+      if (rawAmount < (minBorrow as bigint)) {
         throw new Error(`Minimum borrow is ${Number(minBorrow) / 1e6} USDC`)
       }
 
       // Execute borrow
-      showLoading(`Borrowing ${amount} USDC...`)
-      const borrowTx = await comet.withdraw(USDC_ADDRESS, rawAmount)
-      await borrowTx.wait()
-
-      hideLoading()
-      setBorrowSuccess(true)
+      writeContract({
+        address: COMET_ADDRESS,
+        abi: cometAbi,
+        functionName: "withdraw",
+        args: [USDC_ADDRESS, rawAmount],
+        value: 0n,
+      })
     } catch (error: any) {
       hideLoading()
       const msg = error?.shortMessage || error?.reason || error?.message || "Transaction failed"
       showError("Borrow failed", msg)
-    } finally {
       setIsSubmitting(false)
     }
   }
@@ -159,6 +193,8 @@ export function BorrowForm() {
   const projectedInterest = Number(amount) * (borrowApy / 100)
   const newBorrowBalance = borrowBalance + Number(amount)
   const newHealthFactor = collateralBalance > 0 ? (collateralBalance * 3000 * 0.85) / newBorrowBalance : 999
+
+  const isLoading = isPending || isConfirming || isSubmitting
 
   // Success state
   if (borrowSuccess) {
@@ -285,6 +321,7 @@ export function BorrowForm() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="bg-bg-tertiary/50 border-border-primary pr-20 h-14 text-lg"
+                disabled={isLoading}
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 <Image src="/usdc-icon.webp" alt="USDC" width={20} height={20} className="rounded-full" />
@@ -325,12 +362,12 @@ export function BorrowForm() {
           <Button
             className="w-full brand-button-primary text-white h-12 text-lg font-semibold"
             onClick={handleBorrow}
-            disabled={!isConnected || isSubmitting || !amount || Number.parseFloat(amount) <= 0 || collateralBalance <= 0}
+            disabled={!isConnected || isLoading || !amount || Number.parseFloat(amount) <= 0 || collateralBalance <= 0}
           >
-            {isSubmitting ? (
+            {isLoading ? (
               <div className="flex items-center">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Processing Transaction...
+                Borrowing...
               </div>
             ) : (
               <>
