@@ -1,6 +1,9 @@
 {
   "buildCommand": "npm run build",
   "installCommand": "npm install --legacy-peer-deps",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "env": {
+    "NEXT_PUBLIC_WC_PROJECT_ID": "b89fdec37b0133448c23322ec07f1e10"
+  }
 }
 

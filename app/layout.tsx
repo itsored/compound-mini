@@ -5,6 +5,7 @@ import { TelegramProvider } from "@/lib/telegram-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { FeedbackProvider } from "@/lib/feedback-provider"
 import { AppWagmiProvider } from "@/lib/wagmi-provider"
+import TelegramDeeplinkPolyfill from "@/components/telegram-deeplink-polyfill"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ErrorSuppressionScript } from "@/components/error-suppression-script"
 
@@ -48,6 +49,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <ErrorSuppressionScript />
           <AppWagmiProvider>
+            <TelegramDeeplinkPolyfill />
             <TelegramProvider>
               <FeedbackProvider>
                 {children}
