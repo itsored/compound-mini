@@ -114,31 +114,34 @@ export function RepayForm() {
 
   // Handle transaction confirmation
   useEffect(() => {
-    if (isConfirmed && hash && step === 'approving') {
-      // Approval confirmed, now repay
-      setStep('repaying')
-      const rawAmount = parseUnits(amount, USDC_DECIMALS)
-      writeContract({
-        address: COMET_ADDRESS,
-        abi: cometAbi,
-        functionName: "supply",
-        args: [USDC_ADDRESS, rawAmount],
-      })
-    } else if (isConfirmed && hash && step === 'repaying') {
-      // Repay confirmed
-      hideLoading()
-      setRepaySuccess(true)
-      setIsSubmitting(false)
-      setStep('idle')
-      
-      // Refresh balances
-      loadRepayData()
-      
-      // Notify other parts of the app
-      try {
-        const evt = new Event('onchain:updated')
-        window.dispatchEvent(evt)
-      } catch {}
+    if (isConfirmed && hash) {
+      if (step === 'approving') {
+        // Approval confirmed, now repay
+        setStep('repaying')
+        const rawAmount = parseUnits(amount, USDC_DECIMALS)
+        writeContract({
+          address: COMET_ADDRESS,
+          abi: cometAbi,
+          functionName: "supply",
+          args: [USDC_ADDRESS, rawAmount],
+          value: 0n,
+        })
+      } else if (step === 'repaying') {
+        // Repay confirmed
+        hideLoading()
+        setRepaySuccess(true)
+        setIsSubmitting(false)
+        setStep('idle')
+
+        // Refresh balances
+        loadRepayData()
+
+        // Notify other parts of the app
+        try {
+          const evt = new Event('onchain:updated')
+          window.dispatchEvent(evt)
+        } catch {}
+      }
     }
   }, [isConfirmed, hash, step, amount])
 
@@ -173,18 +176,41 @@ export function RepayForm() {
 
     try {
       setIsSubmitting(true)
-      setStep('approving')
-      showLoading(`Approving ${amount} USDC...`)
+      showLoading(`Repaying ${amount} USDC...`)
 
       const rawAmount = parseUnits(amount, USDC_DECIMALS)
 
-      // First approve USDC
-      writeContract({
+      // Check current allowance
+      const currentAllowance = await publicClient.readContract({
         address: USDC_ADDRESS,
         abi: erc20Abi,
-        functionName: "approve",
-        args: [COMET_ADDRESS, rawAmount],
+        functionName: "allowance",
+        args: [address, COMET_ADDRESS],
       })
+
+      if ((currentAllowance as bigint) < rawAmount) {
+        // Need approval first
+        setStep('approving')
+        showLoading(`Approving ${amount} USDC...`)
+
+        writeContract({
+          address: USDC_ADDRESS,
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [COMET_ADDRESS, rawAmount],
+          value: 0n,
+        })
+      } else {
+        // Already approved, go straight to repay
+        setStep('repaying')
+        writeContract({
+          address: COMET_ADDRESS,
+          abi: cometAbi,
+          functionName: "supply",
+          args: [USDC_ADDRESS, rawAmount],
+          value: 0n,
+        })
+      }
     } catch (error: any) {
       hideLoading()
       const msg = error?.shortMessage || error?.reason || error?.message || "Transaction failed"
