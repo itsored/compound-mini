@@ -32,6 +32,12 @@ const chain = networkConfig.chainId === 31337
 
 const wcProjectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID
 
+// Track latest WalletConnect display URI so we can deep-link reliably in Telegram
+let lastWalletConnectDisplayUri: string | null = null
+export function getLastWalletConnectUri(): string | null {
+  return lastWalletConnectDisplayUri
+}
+
 // Get the current origin for WalletConnect metadata
 const getCurrentOrigin = () => {
   if (typeof window !== 'undefined') {
@@ -58,26 +64,39 @@ const hasInjected = () => {
 const isCustomNetwork = networkConfig?.name?.toLowerCase().includes('custom')
 const shouldIncludeWalletConnect = runtimeHasWindow && !!wcProjectId && (isTelegram || !hasInjected() || isCustomNetwork)
 
+// Create WalletConnect connector separately so we can subscribe to messages
+const maybeWcConnector = (shouldIncludeWalletConnect
+  ? walletConnect({
+      projectId: wcProjectId as string,
+      showQrModal: isTelegram || !hasInjected(),
+      metadata: {
+        name: "Compound Mini",
+        description: "DeFi lending and borrowing",
+        url: getCurrentOrigin(),
+        icons: [`${getCurrentOrigin()}/complogo.png`],
+      },
+    })
+  : null)
+
+// Subscribe to WalletConnect display_uri for deep-link on Telegram
+// @ts-ignore - connector may implement 'on' for message events
+maybeWcConnector?.on?.("message", (m: any) => {
+  try {
+    if (m?.type === "display_uri" && typeof m?.data === "string") {
+      lastWalletConnectDisplayUri = m.data as string
+      if (lastWalletConnectDisplayUri?.startsWith("wc:")) {
+        // keep as-is; consumers will encode as needed
+      }
+    }
+  } catch {}
+})
+
 const connectorsList = [
 	// Prefer generic injected (Rabby, etc.) first, then MetaMask
 	injected({ shimDisconnect: true }),
 	metaMask(),
 	// WalletConnect only when needed (Telegram or no injected wallet in browser)
-	...(shouldIncludeWalletConnect
-		? [
-			walletConnect({
-				projectId: wcProjectId as string,
-				// Browser with injected: QR off; Telegram or no injected: QR on
-				showQrModal: isTelegram || !hasInjected(),
-				metadata: {
-					name: "Compound Mini",
-					description: "DeFi lending and borrowing",
-					url: getCurrentOrigin(),
-					icons: [`${getCurrentOrigin()}/complogo.png`],
-				},
-			}),
-		]
-		: []),
+	...(maybeWcConnector ? [maybeWcConnector] : []),
 ]
 
 export const config = createConfig({

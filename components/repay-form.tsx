@@ -13,6 +13,7 @@ import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 import { useAccount } from "wagmi"
 import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS, bringWalletToFrontForSigning } from "@/lib/comet-onchain"
+import { getLastWalletConnectUri } from "@/lib/wagmi-provider"
 import { isTelegramEnv } from "@/lib/utils"
 import { parseUnits, formatUnits } from "viem"
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
@@ -181,9 +182,23 @@ export function RepayForm() {
     try {
       setIsSubmitting(true)
 
-      // Foreground wallet immediately within the click gesture (Telegram)
+      // Foreground wallet within click gesture using latest WalletConnect URI if available
       if (isTelegramEnv()) {
-        try { bringWalletToFrontForSigning() } catch {}
+        try {
+          const uri = getLastWalletConnectUri()
+          if (uri && typeof uri === 'string') {
+            const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
+            const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
+            ;(window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false })
+            setTimeout(() => {
+              try {
+                (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false })
+              } catch {}
+            }, 350)
+          } else {
+            bringWalletToFrontForSigning()
+          }
+        } catch {}
       }
 
       // Preflight: ensure wallet is on correct chain and has ETH for gas
@@ -224,7 +239,19 @@ export function RepayForm() {
         showLoading(`Approving ${amount} USDC...`)
 
         if (isTelegramEnv()) {
-          bringWalletToFrontForSigning({ delay: 150 })
+          const uri = getLastWalletConnectUri()
+          if (uri) {
+            const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
+            const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
+            setTimeout(() => {
+              try { (window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false }) } catch {}
+              setTimeout(() => {
+                try { (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false }) } catch {}
+              }, 350)
+            }, 150)
+          } else {
+            bringWalletToFrontForSigning({ delay: 150 })
+          }
         }
 
         writeContract({
@@ -239,7 +266,19 @@ export function RepayForm() {
         setStep('repaying')
         showLoading(`Repaying ${amount} USDC...`)
         if (isTelegramEnv()) {
-          bringWalletToFrontForSigning({ delay: 150 })
+          const uri = getLastWalletConnectUri()
+          if (uri) {
+            const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
+            const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
+            setTimeout(() => {
+              try { (window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false }) } catch {}
+              setTimeout(() => {
+                try { (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false }) } catch {}
+              }, 350)
+            }, 150)
+          } else {
+            bringWalletToFrontForSigning({ delay: 150 })
+          }
         }
         writeContract({
           address: COMET_ADDRESS,
