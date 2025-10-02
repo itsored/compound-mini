@@ -533,22 +533,34 @@ export function RepayForm() {
           </Button>
           {showManualOpen && isTelegramEnv() && (
             <div className="mt-2 text-center">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9"
-                onClick={() => {
-                  try {
-                    const uri = getLastWalletConnectUri()
-                    if (uri) {
-                      const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
-                      window.location.href = mmUniversal
-                    }
-                  } catch {}
-                }}
-              >
-                Open MetaMask Manually
-              </Button>
+              {(() => {
+                const uri = getLastWalletConnectUri()
+                if (!uri) return null
+                const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
+                return (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      try {
+                        // Prefer Telegram openLink first, then hard navigation
+                        const tg = (window as any).Telegram?.WebApp
+                        if (tg?.openLink) {
+                          tg.openLink(mmUniversal, { try_instant_view: false })
+                        } else {
+                          window.location.href = mmUniversal
+                        }
+                      } catch {
+                        window.location.href = mmUniversal
+                      }
+                    }}
+                  >
+                    Open MetaMask Manually
+                  </Button>
+                )
+              })()}
             </div>
           )}
         </CardContent>
