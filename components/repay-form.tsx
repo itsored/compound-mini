@@ -11,7 +11,7 @@ import Image from "next/image"
 import { useFeedback } from "@/lib/feedback-provider"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
-import { useAccount } from "wagmi"
+import { useAccount, useConnect } from "wagmi"
 import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS, bringWalletToFrontForSigning } from "@/lib/comet-onchain"
 import { getLastWalletConnectUri } from "@/lib/wagmi-provider"
 import { isTelegramEnv } from "@/lib/utils"
@@ -22,7 +22,8 @@ const USDC_DECIMALS = 6
 
 export function RepayForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, connector } = useAccount()
+  const { connect, connectors } = useConnect()
 
   const [amount, setAmount] = useState("")
   const [usdcBalance, setUsdcBalance] = useState(0)
@@ -217,8 +218,32 @@ export function RepayForm() {
 
       // Debug: Check wallet connection and provider
       addDebugLog(`🔍 Wallet state: connected=${isConnected}, address=${address}`)
+      addDebugLog(`🔍 Connector: ${connector?.name || 'None'}`)
       addDebugLog(`🔍 Ethereum provider: ${!!(window as any).ethereum}`)
       addDebugLog(`🔍 MM SDK: ${!!(window as any).MM_SDK}`)
+      
+      // Check if we have any wallet provider available
+      if (!(window as any).ethereum && !(window as any).MM_SDK) {
+        addDebugLog("❌ No wallet provider found! This will cause transaction to fail.")
+        addDebugLog("🔄 Attempting to reconnect wallet...")
+        
+        // Try to reconnect using the same connector
+        if (connector) {
+          try {
+            await connect({ connector })
+            addDebugLog("✅ Wallet reconnected successfully")
+          } catch (err) {
+            addDebugLog(`❌ Wallet reconnection failed: ${err}`)
+            showError("Wallet Reconnection Failed", "Please manually reconnect your wallet and try again.")
+            setIsSubmitting(false)
+            return
+          }
+        } else {
+          showError("Wallet Provider Missing", "No wallet provider detected. Please reconnect your wallet.")
+          setIsSubmitting(false)
+          return
+        }
+      }
       
       // Try to trigger MetaMask directly via injected provider
       if (isTelegramEnv() && (window as any).ethereum) {
