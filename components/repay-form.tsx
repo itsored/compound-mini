@@ -179,6 +179,28 @@ export function RepayForm() {
       setIsSubmitting(true)
       showLoading(`Repaying ${amount} USDC...`)
 
+      // Preflight: ensure wallet is on correct chain and has ETH for gas
+      try {
+        // Check chain id if possible
+        const chainIdHex = await (window as any)?.ethereum?.request?.({ method: 'eth_chainId' }).catch(() => null)
+        if (chainIdHex && parseInt(chainIdHex, 16) !== 1) {
+          hideLoading()
+          showError("Wrong Network", "Please switch your wallet to Ethereum Mainnet and try again.")
+          setIsSubmitting(false)
+          return
+        }
+
+        // Check native ETH balance for gas
+        const nativeBal = await publicClient.getBalance({ address: address as `0x${string}` }).catch(() => 0n)
+        const minGasWei = 50_000_000_000_000n // ~0.00005 ETH
+        if (!nativeBal || nativeBal < minGasWei) {
+          hideLoading()
+          showError("Insufficient ETH for Gas", "Your wallet needs a small amount of ETH to pay gas. Top up and retry.")
+          setIsSubmitting(false)
+          return
+        }
+      } catch {}
+
       const rawAmount = parseUnits(amount, USDC_DECIMALS)
 
       // Check current allowance
