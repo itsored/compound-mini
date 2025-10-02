@@ -391,11 +391,22 @@ export function RepayForm() {
         
         addDebugLog("🚀 Calling writeContract for approval...")
         
-        // Try direct provider transaction first
+        // Alternative approach: Force MetaMask to open with a simple request first
         if ((window as any).ethereum) {
           try {
-            addDebugLog("📱 Attempting direct provider transaction...")
-            const result = await (window as any).ethereum.request({
+            addDebugLog("📱 Testing provider with simple request...")
+            
+            // First, try a simple request to wake up MetaMask
+            await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
+            addDebugLog("✅ Provider is responsive")
+            
+            // Then try to get chain ID to ensure connection
+            const chainId = await (window as any).ethereum.request({ method: 'eth_chainId' })
+            addDebugLog(`🔗 Chain ID: ${chainId}`)
+            
+            // Now try the transaction with a timeout
+            addDebugLog("📱 Attempting transaction with timeout...")
+            const transactionPromise = (window as any).ethereum.request({
               method: 'eth_sendTransaction',
               params: [{
                 from: address,
@@ -406,13 +417,23 @@ export function RepayForm() {
                 value: '0x0'
               }]
             })
-            addDebugLog(`✅ Direct transaction sent: ${result}`)
+            
+            // Add timeout to prevent hanging
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Transaction timeout')), 15000)
+            )
+            
+            const result = await Promise.race([transactionPromise, timeoutPromise])
+            addDebugLog(`✅ Transaction sent: ${result}`)
             return
+            
           } catch (err) {
-            addDebugLog(`⚠️ Direct transaction failed, falling back to wagmi: ${err}`)
+            addDebugLog(`⚠️ Direct transaction failed: ${err}`)
+            addDebugLog("🔄 Falling back to wagmi approach...")
           }
         }
         
+        addDebugLog("📤 Using wagmi writeContract...")
         writeContract({
           address: USDC_ADDRESS,
           abi: erc20Abi,
@@ -694,33 +715,61 @@ export function RepayForm() {
             )}
           </Button>
           {showManualOpen && isTelegramEnv() && (
-            <div className="mt-2 text-center">
+            <div className="mt-2 text-center space-y-2">
               {(() => {
                 const uri = getLastWalletConnectUri()
                 if (!uri) return null
                 const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
                 return (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      try {
-                        // Prefer Telegram openLink first, then hard navigation
-                        const tg = (window as any).Telegram?.WebApp
-                        if (tg?.openLink) {
-                          tg.openLink(mmUniversal, { try_instant_view: false })
-                        } else {
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        try {
+                          // Prefer Telegram openLink first, then hard navigation
+                          const tg = (window as any).Telegram?.WebApp
+                          if (tg?.openLink) {
+                            tg.openLink(mmUniversal, { try_instant_view: false })
+                          } else {
+                            window.location.href = mmUniversal
+                          }
+                        } catch {
                           window.location.href = mmUniversal
                         }
-                      } catch {
-                        window.location.href = mmUniversal
-                      }
-                    }}
-                  >
-                    Open MetaMask Manually
-                  </Button>
+                      }}
+                    >
+                      Open MetaMask Manually
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 ml-2"
+                      onClick={async () => {
+                        try {
+                          addDebugLog("🔄 Manual transaction attempt...")
+                          const result = await (window as any).ethereum.request({
+                            method: 'eth_sendTransaction',
+                            params: [{
+                              from: address,
+                              to: USDC_ADDRESS,
+                              data: '0x095ea7b3' + // approve function selector
+                                    COMET_ADDRESS.slice(2).padStart(64, '0') + // spender
+                                    rawAmount.toString(16).padStart(64, '0'), // amount
+                              value: '0x0'
+                            }]
+                          })
+                          addDebugLog(`✅ Manual transaction sent: ${result}`)
+                        } catch (err) {
+                          addDebugLog(`❌ Manual transaction failed: ${err}`)
+                        }
+                      }}
+                    >
+                      Try Direct Transaction
+                    </Button>
+                  </>
                 )
               })()}
             </div>
