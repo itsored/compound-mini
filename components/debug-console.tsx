@@ -5,12 +5,34 @@ import { useEffect, useRef, useState } from "react"
 type LogEntry = { level: "log" | "warn" | "error" | "info" | "debug"; message: any[]; time: string }
 
 export default function DebugConsole() {
-  const enabled = process.env.NEXT_PUBLIC_DEBUG_UI === "true"
+  // Enable if env is true, or URL has ?debug=1, or localStorage has DEBUG_UI=1
+  const computeShouldEnable = () => {
+    const envEnabled = process.env.NEXT_PUBLIC_DEBUG_UI === "true"
+    if (typeof window === 'undefined') return envEnabled
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const urlEnabled = params.get('debug') === '1'
+      const stored = window.localStorage.getItem('DEBUG_UI') === '1'
+      if (urlEnabled) {
+        window.localStorage.setItem('DEBUG_UI', '1')
+      }
+      return envEnabled || urlEnabled || stored
+    } catch {
+      return envEnabled
+    }
+  }
+
+  const [enabled, setEnabled] = useState(computeShouldEnable())
   const [open, setOpen] = useState(true) // Start open by default
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [autoScroll, setAutoScroll] = useState(true)
   const logContainerRef = useRef<HTMLDivElement>(null)
   const original = useRef<{ log: any; warn: any; error: any; info: any; debug: any } | null>(null)
+
+  useEffect(() => {
+    // Recompute on mount in case of client-only signals
+    setEnabled(computeShouldEnable())
+  }, [])
 
   useEffect(() => {
     if (!enabled) return
@@ -96,7 +118,7 @@ export default function DebugConsole() {
   if (!enabled) return null
 
   return (
-    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, top: 0, zIndex: 99999, pointerEvents: "none" }}>
+    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, top: 0, zIndex: 2147483647, pointerEvents: "none" }}>
       {open && (
         <div
           style={{
