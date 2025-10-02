@@ -118,8 +118,10 @@ export function RepayForm() {
   // Handle transaction confirmation
   useEffect(() => {
     if (isConfirmed && hash) {
+      console.log("✅ Transaction confirmed:", hash)
       if (step === 'approving') {
         // Approval confirmed, now repay
+        console.log("🔄 Moving to repay step...")
         setStep('repaying')
         const rawAmount = parseUnits(amount, USDC_DECIMALS)
         if (isTelegramEnv()) {
@@ -134,6 +136,7 @@ export function RepayForm() {
         })
       } else if (step === 'repaying') {
         // Repay confirmed
+        console.log("🎉 Repay completed successfully!")
         hideLoading()
         setRepaySuccess(true)
         setIsSubmitting(false)
@@ -150,6 +153,21 @@ export function RepayForm() {
       }
     }
   }, [isConfirmed, hash, step, amount])
+
+  // Add timeout detection for stuck transactions
+  useEffect(() => {
+    if (isPending && step !== 'idle') {
+      console.log("⏰ Transaction pending, setting timeout...")
+      const timeout = setTimeout(() => {
+        if (isPending && step !== 'idle') {
+          console.log("⚠️ Transaction appears stuck, showing manual option...")
+          setShowManualOpen(true)
+        }
+      }, 10000) // 10 second timeout
+      
+      return () => clearTimeout(timeout)
+    }
+  }, [isPending, step])
 
   // Handle errors
   useEffect(() => {
@@ -182,19 +200,40 @@ export function RepayForm() {
 
     try {
       setIsSubmitting(true)
+      console.log("🚀 Starting repay process...")
+
+      // Debug: Check wallet connection and provider
+      console.log("🔍 Wallet state:", { isConnected, address })
+      console.log("🔍 Ethereum provider:", !!(window as any).ethereum)
+      console.log("🔍 MM SDK:", !!(window as any).MM_SDK)
+      
+      // Try to trigger MetaMask directly via injected provider
+      if (isTelegramEnv() && (window as any).ethereum) {
+        try {
+          console.log("📱 Telegram detected, attempting to request accounts...")
+          await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
+          console.log("✅ Accounts requested successfully")
+        } catch (err) {
+          console.log("⚠️ Account request failed:", err)
+        }
+      }
 
       // Foreground wallet within click gesture using latest WalletConnect URI if available
       if (isTelegramEnv()) {
         try {
           const uri = getLastWalletConnectUri()
+          console.log("🔗 WalletConnect URI:", uri ? "Found" : "Not found")
           if (uri && typeof uri === 'string') {
             const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
             const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
             const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
+            console.log("📱 iOS detected:", isiOS)
             if (isiOS) {
               // iOS Telegram often blocks custom schemes; use universal via direct location
+              console.log("🔗 Opening universal link for iOS...")
               window.location.href = mmUniversal
             } else {
+              console.log("🔗 Opening deep link for Android...")
               ;(window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false })
               setTimeout(() => {
                 try {
@@ -203,9 +242,12 @@ export function RepayForm() {
               }, 350)
             }
           } else {
+            console.log("🔗 No WC URI, using fallback...")
             bringWalletToFrontForSigning()
           }
-        } catch {}
+        } catch (err) {
+          console.log("⚠️ Deep link failed:", err)
+        }
       }
 
       // Preflight: ensure wallet is on correct chain and has ETH for gas
@@ -269,6 +311,20 @@ export function RepayForm() {
           }
         }
 
+        console.log("📝 Writing approve contract...")
+        console.log("📝 Contract details:", { address: USDC_ADDRESS, args: [COMET_ADDRESS, rawAmount] })
+        
+        // Force MetaMask to open by requesting accounts first
+        if (isTelegramEnv() && (window as any).ethereum) {
+          try {
+            console.log("📱 Forcing MetaMask to open for approval...")
+            await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
+            console.log("✅ Accounts confirmed, proceeding with approval...")
+          } catch (err) {
+            console.log("⚠️ Account request failed:", err)
+          }
+        }
+        
         writeContract({
           address: USDC_ADDRESS,
           abi: erc20Abi,
@@ -302,6 +358,21 @@ export function RepayForm() {
             setTimeout(() => setShowManualOpen(true), 1800)
           }
         }
+        
+        console.log("📝 Writing repay contract...")
+        console.log("📝 Contract details:", { address: COMET_ADDRESS, args: [USDC_ADDRESS, rawAmount] })
+        
+        // Force MetaMask to open by requesting accounts first
+        if (isTelegramEnv() && (window as any).ethereum) {
+          try {
+            console.log("📱 Forcing MetaMask to open for repay...")
+            await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
+            console.log("✅ Accounts confirmed, proceeding with repay...")
+          } catch (err) {
+            console.log("⚠️ Account request failed:", err)
+          }
+        }
+        
         writeContract({
           address: COMET_ADDRESS,
           abi: cometAbi,
