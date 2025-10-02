@@ -390,6 +390,29 @@ export function RepayForm() {
         }
         
         addDebugLog("🚀 Calling writeContract for approval...")
+        
+        // Try direct provider transaction first
+        if ((window as any).ethereum) {
+          try {
+            addDebugLog("📱 Attempting direct provider transaction...")
+            const result = await (window as any).ethereum.request({
+              method: 'eth_sendTransaction',
+              params: [{
+                from: address,
+                to: USDC_ADDRESS,
+                data: '0x095ea7b3' + // approve function selector
+                      COMET_ADDRESS.slice(2).padStart(64, '0') + // spender
+                      rawAmount.toString(16).padStart(64, '0'), // amount
+                value: '0x0'
+              }]
+            })
+            addDebugLog(`✅ Direct transaction sent: ${result}`)
+            return
+          } catch (err) {
+            addDebugLog(`⚠️ Direct transaction failed, falling back to wagmi: ${err}`)
+          }
+        }
+        
         writeContract({
           address: USDC_ADDRESS,
           abi: erc20Abi,
