@@ -48,6 +48,7 @@ export function RepayForm() {
 
   useEffect(() => {
     setMounted(true)
+    addDebugLog("🔧 RepayForm component mounted")
   }, [])
 
   // Debug logging helper
@@ -128,15 +129,16 @@ export function RepayForm() {
   // Handle transaction confirmation
   useEffect(() => {
     if (isConfirmed && hash) {
-      console.log("✅ Transaction confirmed:", hash)
+      addDebugLog(`✅ Transaction confirmed: ${hash}`)
       if (step === 'approving') {
         // Approval confirmed, now repay
-        console.log("🔄 Moving to repay step...")
+        addDebugLog("🔄 Moving to repay step...")
         setStep('repaying')
         const rawAmount = parseUnits(amount, USDC_DECIMALS)
         if (isTelegramEnv()) {
           try { bringWalletToFrontForSigning() } catch {}
         }
+        addDebugLog("📝 Writing repay contract after approval...")
         writeContract({
           address: COMET_ADDRESS,
           abi: cometAbi,
@@ -146,7 +148,7 @@ export function RepayForm() {
         })
       } else if (step === 'repaying') {
         // Repay confirmed
-        console.log("🎉 Repay completed successfully!")
+        addDebugLog("🎉 Repay completed successfully!")
         hideLoading()
         setRepaySuccess(true)
         setIsSubmitting(false)
@@ -167,10 +169,10 @@ export function RepayForm() {
   // Add timeout detection for stuck transactions
   useEffect(() => {
     if (isPending && step !== 'idle') {
-      console.log("⏰ Transaction pending, setting timeout...")
+      addDebugLog("⏰ Transaction pending, setting timeout...")
       const timeout = setTimeout(() => {
         if (isPending && step !== 'idle') {
-          console.log("⚠️ Transaction appears stuck, showing manual option...")
+          addDebugLog("⚠️ Transaction appears stuck, showing manual option...")
           setShowManualOpen(true)
         }
       }, 10000) // 10 second timeout
@@ -182,6 +184,7 @@ export function RepayForm() {
   // Handle errors
   useEffect(() => {
     if (error) {
+      addDebugLog(`❌ Transaction error: ${error?.shortMessage || error?.reason || error?.message || "Transaction failed"}`)
       hideLoading()
       const msg = error?.shortMessage || error?.reason || error?.message || "Transaction failed"
       showError("Transaction Failed", msg)
@@ -335,6 +338,7 @@ export function RepayForm() {
           }
         }
         
+        addDebugLog("🚀 Calling writeContract for approval...")
         writeContract({
           address: USDC_ADDRESS,
           abi: erc20Abi,
@@ -342,6 +346,7 @@ export function RepayForm() {
           args: [COMET_ADDRESS, rawAmount],
           value: 0n,
         })
+        addDebugLog("📤 writeContract called for approval")
       } else {
         // Already approved, go straight to repay
         setStep('repaying')
@@ -383,6 +388,7 @@ export function RepayForm() {
           }
         }
         
+        addDebugLog("🚀 Calling writeContract for repay...")
         writeContract({
           address: COMET_ADDRESS,
           abi: cometAbi,
@@ -390,6 +396,7 @@ export function RepayForm() {
           args: [USDC_ADDRESS, rawAmount],
           value: 0n,
         })
+        addDebugLog("📤 writeContract called for repay")
       }
     } catch (error: any) {
       hideLoading()
@@ -653,6 +660,17 @@ export function RepayForm() {
           <div className="flex justify-between items-center">
             <CardTitle className="text-lg">Debug Logs</CardTitle>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  addDebugLog("🧪 Test log from button click")
+                  setShowDebug(true)
+                }}
+                className="h-8 text-xs"
+              >
+                Test Log
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
