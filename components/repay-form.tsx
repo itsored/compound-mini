@@ -34,6 +34,7 @@ export function RepayForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [repaySuccess, setRepaySuccess] = useState(false)
   const [step, setStep] = useState<'idle' | 'approving' | 'repaying'>('idle')
+  const [showManualOpen, setShowManualOpen] = useState(false)
 
   const USDC_PRICE_USD = 1 // USDC is pegged to USD
 
@@ -260,8 +261,11 @@ export function RepayForm() {
                 }, 350)
               }
             }, 150)
+            // If wallet didn’t foreground in time, surface manual button
+            setTimeout(() => setShowManualOpen(true), 1800)
           } else {
             bringWalletToFrontForSigning({ delay: 150 })
+            setTimeout(() => setShowManualOpen(true), 1800)
           }
         }
 
@@ -292,8 +296,10 @@ export function RepayForm() {
                 }, 350)
               }
             }, 150)
+            setTimeout(() => setShowManualOpen(true), 1800)
           } else {
             bringWalletToFrontForSigning({ delay: 150 })
+            setTimeout(() => setShowManualOpen(true), 1800)
           }
         }
         writeContract({
@@ -525,6 +531,26 @@ export function RepayForm() {
               </>
             )}
           </Button>
+          {showManualOpen && isTelegramEnv() && (
+            <div className="mt-2 text-center">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={() => {
+                  try {
+                    const uri = getLastWalletConnectUri()
+                    if (uri) {
+                      const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
+                      window.location.href = mmUniversal
+                    }
+                  } catch {}
+                }}
+              >
+                Open MetaMask Manually
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
