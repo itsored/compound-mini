@@ -35,6 +35,8 @@ export function RepayForm() {
   const [repaySuccess, setRepaySuccess] = useState(false)
   const [step, setStep] = useState<'idle' | 'approving' | 'repaying'>('idle')
   const [showManualOpen, setShowManualOpen] = useState(false)
+  const [debugLogs, setDebugLogs] = useState<string[]>([])
+  const [showDebug, setShowDebug] = useState(false)
 
   const USDC_PRICE_USD = 1 // USDC is pegged to USD
 
@@ -47,6 +49,14 @@ export function RepayForm() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Debug logging helper
+  const addDebugLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString()
+    const logEntry = `[${timestamp}] ${message}`
+    setDebugLogs(prev => [...prev.slice(-50), logEntry]) // Keep last 50 logs
+    console.log(logEntry)
+  }
 
   useEffect(() => {
     if (isConnected && address) {
@@ -200,21 +210,21 @@ export function RepayForm() {
 
     try {
       setIsSubmitting(true)
-      console.log("🚀 Starting repay process...")
+      addDebugLog("🚀 Starting repay process...")
 
       // Debug: Check wallet connection and provider
-      console.log("🔍 Wallet state:", { isConnected, address })
-      console.log("🔍 Ethereum provider:", !!(window as any).ethereum)
-      console.log("🔍 MM SDK:", !!(window as any).MM_SDK)
+      addDebugLog(`🔍 Wallet state: connected=${isConnected}, address=${address}`)
+      addDebugLog(`🔍 Ethereum provider: ${!!(window as any).ethereum}`)
+      addDebugLog(`🔍 MM SDK: ${!!(window as any).MM_SDK}`)
       
       // Try to trigger MetaMask directly via injected provider
       if (isTelegramEnv() && (window as any).ethereum) {
         try {
-          console.log("📱 Telegram detected, attempting to request accounts...")
+          addDebugLog("📱 Telegram detected, attempting to request accounts...")
           await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
-          console.log("✅ Accounts requested successfully")
+          addDebugLog("✅ Accounts requested successfully")
         } catch (err) {
-          console.log("⚠️ Account request failed:", err)
+          addDebugLog(`⚠️ Account request failed: ${err}`)
         }
       }
 
@@ -222,18 +232,18 @@ export function RepayForm() {
       if (isTelegramEnv()) {
         try {
           const uri = getLastWalletConnectUri()
-          console.log("🔗 WalletConnect URI:", uri ? "Found" : "Not found")
+          addDebugLog(`🔗 WalletConnect URI: ${uri ? "Found" : "Not found"}`)
           if (uri && typeof uri === 'string') {
             const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
             const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
             const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
-            console.log("📱 iOS detected:", isiOS)
+            addDebugLog(`📱 iOS detected: ${isiOS}`)
             if (isiOS) {
               // iOS Telegram often blocks custom schemes; use universal via direct location
-              console.log("🔗 Opening universal link for iOS...")
+              addDebugLog("🔗 Opening universal link for iOS...")
               window.location.href = mmUniversal
             } else {
-              console.log("🔗 Opening deep link for Android...")
+              addDebugLog("🔗 Opening deep link for Android...")
               ;(window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false })
               setTimeout(() => {
                 try {
@@ -242,11 +252,11 @@ export function RepayForm() {
               }, 350)
             }
           } else {
-            console.log("🔗 No WC URI, using fallback...")
+            addDebugLog("🔗 No WC URI, using fallback...")
             bringWalletToFrontForSigning()
           }
         } catch (err) {
-          console.log("⚠️ Deep link failed:", err)
+          addDebugLog(`⚠️ Deep link failed: ${err}`)
         }
       }
 
@@ -311,17 +321,17 @@ export function RepayForm() {
           }
         }
 
-        console.log("📝 Writing approve contract...")
-        console.log("📝 Contract details:", { address: USDC_ADDRESS, args: [COMET_ADDRESS, rawAmount] })
+        addDebugLog("📝 Writing approve contract...")
+        addDebugLog(`📝 Contract details: address=${USDC_ADDRESS}, args=[${COMET_ADDRESS}, ${rawAmount}]`)
         
         // Force MetaMask to open by requesting accounts first
         if (isTelegramEnv() && (window as any).ethereum) {
           try {
-            console.log("📱 Forcing MetaMask to open for approval...")
+            addDebugLog("📱 Forcing MetaMask to open for approval...")
             await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
-            console.log("✅ Accounts confirmed, proceeding with approval...")
+            addDebugLog("✅ Accounts confirmed, proceeding with approval...")
           } catch (err) {
-            console.log("⚠️ Account request failed:", err)
+            addDebugLog(`⚠️ Account request failed: ${err}`)
           }
         }
         
@@ -359,17 +369,17 @@ export function RepayForm() {
           }
         }
         
-        console.log("📝 Writing repay contract...")
-        console.log("📝 Contract details:", { address: COMET_ADDRESS, args: [USDC_ADDRESS, rawAmount] })
+        addDebugLog("📝 Writing repay contract...")
+        addDebugLog(`📝 Contract details: address=${COMET_ADDRESS}, args=[${USDC_ADDRESS}, ${rawAmount}]`)
         
         // Force MetaMask to open by requesting accounts first
         if (isTelegramEnv() && (window as any).ethereum) {
           try {
-            console.log("📱 Forcing MetaMask to open for repay...")
+            addDebugLog("📱 Forcing MetaMask to open for repay...")
             await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
-            console.log("✅ Accounts confirmed, proceeding with repay...")
+            addDebugLog("✅ Accounts confirmed, proceeding with repay...")
           } catch (err) {
-            console.log("⚠️ Account request failed:", err)
+            addDebugLog(`⚠️ Account request failed: ${err}`)
           }
         }
         
@@ -635,6 +645,61 @@ export function RepayForm() {
             </div>
           )}
         </CardContent>
+      </Card>
+
+      {/* Debug Section */}
+      <Card className="brand-card text-white">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg">Debug Logs</CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDebug(!showDebug)}
+                className="h-8 text-xs"
+              >
+                {showDebug ? "Hide" : "Show"} Logs
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const logText = debugLogs.join('\n')
+                  navigator.clipboard.writeText(logText).then(() => {
+                    console.log("📋 Debug logs copied to clipboard!")
+                  })
+                }}
+                className="h-8 text-xs"
+              >
+                Copy All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDebugLogs([])}
+                className="h-8 text-xs"
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        {showDebug && (
+          <CardContent>
+            <div className="bg-black/50 p-3 rounded text-xs font-mono max-h-40 overflow-auto">
+              {debugLogs.length === 0 ? (
+                <div className="text-gray-400">No debug logs yet...</div>
+              ) : (
+                debugLogs.map((log, i) => (
+                  <div key={i} className="text-green-400 mb-1 break-words">
+                    {log}
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Benefits Section */}
