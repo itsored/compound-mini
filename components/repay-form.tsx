@@ -232,6 +232,32 @@ export function RepayForm() {
           try {
             await connect({ connector })
             addDebugLog("✅ Wallet reconnected successfully")
+            
+            // Wait a moment for provider to initialize
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            
+            // Check if provider is now available
+            addDebugLog(`🔍 After reconnect - Ethereum provider: ${!!(window as any).ethereum}`)
+            addDebugLog(`🔍 After reconnect - MM SDK: ${!!(window as any).MM_SDK}`)
+            
+            // Try to get provider from connector
+            try {
+              const provider = await connector?.getProvider()
+              addDebugLog(`🔍 Connector provider: ${!!provider}`)
+              if (provider && !(window as any).ethereum) {
+                (window as any).ethereum = provider
+                addDebugLog("✅ Set ethereum provider from connector")
+              }
+            } catch (err) {
+              addDebugLog(`⚠️ Could not get provider from connector: ${err}`)
+            }
+            
+            if (!(window as any).ethereum && !(window as any).MM_SDK) {
+              addDebugLog("❌ Provider still not available after reconnection")
+              showError("Wallet Provider Issue", "Wallet reconnected but provider not available. Please try disconnecting and reconnecting your wallet.")
+              setIsSubmitting(false)
+              return
+            }
           } catch (err) {
             addDebugLog(`❌ Wallet reconnection failed: ${err}`)
             showError("Wallet Reconnection Failed", "Please manually reconnect your wallet and try again.")
