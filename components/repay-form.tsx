@@ -189,12 +189,18 @@ export function RepayForm() {
           if (uri && typeof uri === 'string') {
             const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
             const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
-            ;(window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false })
-            setTimeout(() => {
-              try {
-                (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false })
-              } catch {}
-            }, 350)
+            const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
+            if (isiOS) {
+              // iOS Telegram often blocks custom schemes; use universal via direct location
+              window.location.href = mmUniversal
+            } else {
+              ;(window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false })
+              setTimeout(() => {
+                try {
+                  (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false })
+                } catch {}
+              }, 350)
+            }
           } else {
             bringWalletToFrontForSigning()
           }
@@ -243,11 +249,16 @@ export function RepayForm() {
           if (uri) {
             const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
             const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
+            const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
             setTimeout(() => {
-              try { (window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false }) } catch {}
-              setTimeout(() => {
-                try { (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false }) } catch {}
-              }, 350)
+              if (isiOS) {
+                window.location.href = mmUniversal
+              } else {
+                try { (window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false }) } catch {}
+                setTimeout(() => {
+                  try { (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false }) } catch {}
+                }, 350)
+              }
             }, 150)
           } else {
             bringWalletToFrontForSigning({ delay: 150 })
@@ -270,11 +281,16 @@ export function RepayForm() {
           if (uri) {
             const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
             const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
+            const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
             setTimeout(() => {
-              try { (window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false }) } catch {}
-              setTimeout(() => {
-                try { (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false }) } catch {}
-              }, 350)
+              if (isiOS) {
+                window.location.href = mmUniversal
+              } else {
+                try { (window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false }) } catch {}
+                setTimeout(() => {
+                  try { (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false }) } catch {}
+                }, 350)
+              }
             }, 150)
           } else {
             bringWalletToFrontForSigning({ delay: 150 })
