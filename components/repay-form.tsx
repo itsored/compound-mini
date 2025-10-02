@@ -120,6 +120,9 @@ export function RepayForm() {
         // Approval confirmed, now repay
         setStep('repaying')
         const rawAmount = parseUnits(amount, USDC_DECIMALS)
+        if (isTelegramEnv()) {
+          try { bringWalletToFrontForSigning() } catch {}
+        }
         writeContract({
           address: COMET_ADDRESS,
           abi: cometAbi,
@@ -177,7 +180,11 @@ export function RepayForm() {
 
     try {
       setIsSubmitting(true)
-      showLoading(`Repaying ${amount} USDC...`)
+
+      // Foreground wallet immediately within the click gesture (Telegram)
+      if (isTelegramEnv()) {
+        try { bringWalletToFrontForSigning() } catch {}
+      }
 
       // Preflight: ensure wallet is on correct chain and has ETH for gas
       try {
@@ -211,11 +218,6 @@ export function RepayForm() {
         args: [address, COMET_ADDRESS],
       })
 
-      // Foreground wallet within user gesture (Telegram)
-      if (isTelegramEnv()) {
-        bringWalletToFrontForSigning()
-      }
-
       if ((currentAllowance as bigint) < rawAmount) {
         // Need approval first
         setStep('approving')
@@ -235,6 +237,7 @@ export function RepayForm() {
       } else {
         // Already approved, go straight to repay
         setStep('repaying')
+        showLoading(`Repaying ${amount} USDC...`)
         if (isTelegramEnv()) {
           bringWalletToFrontForSigning({ delay: 150 })
         }
