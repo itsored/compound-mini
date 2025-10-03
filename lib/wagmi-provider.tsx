@@ -3,7 +3,7 @@
 import { ReactNode, useEffect } from "react"
 import { WagmiProvider, createConfig, http } from "wagmi"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { injected, metaMask, walletConnect } from "wagmi/connectors"
+import { injected, metaMask } from "wagmi/connectors"
 import { hardhat, sepolia } from "viem/chains"
 import { getCurrentNetworkConfig, getRpcUrl } from "./network-config"
 import { isTelegramEnv } from "./utils"
@@ -30,13 +30,7 @@ const chain = networkConfig.chainId === 31337
         }
       } as const
 
-const wcProjectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID
-
-// Track latest WalletConnect display URI so we can deep-link reliably in Telegram
-let lastWalletConnectDisplayUri: string | null = null
-export function getLastWalletConnectUri(): string | null {
-  return lastWalletConnectDisplayUri
-}
+// WalletConnect removed in favor of MetaMask SDK injected provider in Telegram
 
 // Get the current origin for WalletConnect metadata
 const getCurrentOrigin = () => {
@@ -60,43 +54,12 @@ const hasInjected = () => {
   }
 }
 
-// Always offer WalletConnect on custom (Tenderly) network to avoid injected provider conflicts
-const isCustomNetwork = networkConfig?.name?.toLowerCase().includes('custom')
-const shouldIncludeWalletConnect = runtimeHasWindow && !!wcProjectId && (isTelegram || !hasInjected() || isCustomNetwork)
-
-// Create WalletConnect connector separately so we can subscribe to messages
-const maybeWcConnector = (shouldIncludeWalletConnect
-  ? walletConnect({
-      projectId: wcProjectId as string,
-      showQrModal: isTelegram || !hasInjected(),
-      metadata: {
-        name: "Compound Mini",
-        description: "DeFi lending and borrowing",
-        url: getCurrentOrigin(),
-        icons: [`${getCurrentOrigin()}/complogo.png`],
-      },
-    })
-  : null)
-
-// Subscribe to WalletConnect display_uri for deep-link on Telegram
-// @ts-ignore - connector may implement 'on' for message events
-maybeWcConnector?.on?.("message", (m: any) => {
-  try {
-    if (m?.type === "display_uri" && typeof m?.data === "string") {
-      lastWalletConnectDisplayUri = m.data as string
-      if (lastWalletConnectDisplayUri?.startsWith("wc:")) {
-        // keep as-is; consumers will encode as needed
-      }
-    }
-  } catch {}
-})
+// WalletConnect code path removed
 
 const connectorsList = [
 	// Prefer generic injected (Rabby, etc.) first, then MetaMask
 	injected({ shimDisconnect: true }),
 	metaMask(),
-	// WalletConnect only when needed (Telegram or no injected wallet in browser)
-	...(maybeWcConnector ? [maybeWcConnector] : []),
 ]
 
 export const config = createConfig({

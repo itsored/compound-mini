@@ -13,7 +13,6 @@ import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 import { useAccount, useConnect } from "wagmi"
 import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS, bringWalletToFrontForSigning } from "@/lib/comet-onchain"
-import { getLastWalletConnectUri } from "@/lib/wagmi-provider"
 import { isTelegramEnv } from "@/lib/utils"
 import { parseUnits, formatUnits } from "viem"
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
@@ -282,36 +281,11 @@ export function RepayForm() {
         }
       }
 
-      // Foreground wallet within click gesture using latest WalletConnect URI if available
-      if (isTelegramEnv()) {
+      // With MetaMask SDK path, skip WalletConnect deep link. Just ensure provider is awake.
+      if (isTelegramEnv() && (window as any).ethereum) {
         try {
-          const uri = getLastWalletConnectUri()
-          addDebugLog(`🔗 WalletConnect URI: ${uri ? "Found" : "Not found"}`)
-          if (uri && typeof uri === 'string') {
-            const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
-            const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
-            const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
-            addDebugLog(`📱 iOS detected: ${isiOS}`)
-            if (isiOS) {
-              // iOS Telegram often blocks custom schemes; use universal via direct location
-              addDebugLog("🔗 Opening universal link for iOS...")
-              window.location.href = mmUniversal
-            } else {
-              addDebugLog("🔗 Opening deep link for Android...")
-              ;(window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false })
-              setTimeout(() => {
-                try {
-                  (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false })
-                } catch {}
-              }, 350)
-            }
-          } else {
-            addDebugLog("🔗 No WC URI, using fallback...")
-            bringWalletToFrontForSigning()
-          }
-        } catch (err) {
-          addDebugLog(`⚠️ Deep link failed: ${err}`)
-        }
+          await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
+        } catch {}
       }
 
       // Preflight: ensure wallet is on correct chain and has ETH for gas
@@ -351,29 +325,8 @@ export function RepayForm() {
         setStep('approving')
         showLoading(`Approving ${amount} USDC...`)
 
-        if (isTelegramEnv()) {
-          const uri = getLastWalletConnectUri()
-          if (uri) {
-            const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
-            const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
-            const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
-            setTimeout(() => {
-              if (isiOS) {
-                window.location.href = mmUniversal
-              } else {
-                try { (window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false }) } catch {}
-                setTimeout(() => {
-                  try { (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false }) } catch {}
-                }, 350)
-              }
-            }, 150)
-            // If wallet didn’t foreground in time, surface manual button
-            setTimeout(() => setShowManualOpen(true), 1800)
-          } else {
-            bringWalletToFrontForSigning({ delay: 150 })
-            setTimeout(() => setShowManualOpen(true), 1800)
-          }
-        }
+        // With SDK path, avoid deep links and just surface manual if needed
+        if (isTelegramEnv()) setTimeout(() => setShowManualOpen(true), 1800)
 
         addDebugLog("📝 Writing approve contract...")
         addDebugLog(`📝 Contract details: address=${USDC_ADDRESS}, args=[${COMET_ADDRESS}, ${rawAmount}]`)
@@ -446,28 +399,7 @@ export function RepayForm() {
         // Already approved, go straight to repay
         setStep('repaying')
         showLoading(`Repaying ${amount} USDC...`)
-        if (isTelegramEnv()) {
-          const uri = getLastWalletConnectUri()
-          if (uri) {
-            const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
-            const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
-            const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
-            setTimeout(() => {
-              if (isiOS) {
-                window.location.href = mmUniversal
-              } else {
-                try { (window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false }) } catch {}
-                setTimeout(() => {
-                  try { (window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false }) } catch {}
-                }, 350)
-              }
-            }, 150)
-            setTimeout(() => setShowManualOpen(true), 1800)
-          } else {
-            bringWalletToFrontForSigning({ delay: 150 })
-            setTimeout(() => setShowManualOpen(true), 1800)
-          }
-        }
+        if (isTelegramEnv()) setTimeout(() => setShowManualOpen(true), 1800)
         
         addDebugLog("📝 Writing repay contract...")
         addDebugLog(`📝 Contract details: address=${COMET_ADDRESS}, args=[${USDC_ADDRESS}, ${rawAmount}]`)
@@ -716,62 +648,32 @@ export function RepayForm() {
           </Button>
           {showManualOpen && isTelegramEnv() && (
             <div className="mt-2 text-center space-y-2">
-              {(() => {
-                const uri = getLastWalletConnectUri()
-                if (!uri) return null
-                const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
-                return (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        try {
-                          // Prefer Telegram openLink first, then hard navigation
-                          const tg = (window as any).Telegram?.WebApp
-                          if (tg?.openLink) {
-                            tg.openLink(mmUniversal, { try_instant_view: false })
-                          } else {
-                            window.location.href = mmUniversal
-                          }
-                        } catch {
-                          window.location.href = mmUniversal
-                        }
-                      }}
-                    >
-                      Open MetaMask Manually
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 ml-2"
-                      onClick={async () => {
-                        try {
-                          addDebugLog("🔄 Manual transaction attempt...")
-                          const result = await (window as any).ethereum.request({
-                            method: 'eth_sendTransaction',
-                            params: [{
-                              from: address,
-                              to: USDC_ADDRESS,
-                              data: '0x095ea7b3' + // approve function selector
-                                    COMET_ADDRESS.slice(2).padStart(64, '0') + // spender
-                                    rawAmount.toString(16).padStart(64, '0'), // amount
-                              value: '0x0'
-                            }]
-                          })
-                          addDebugLog(`✅ Manual transaction sent: ${result}`)
-                        } catch (err) {
-                          addDebugLog(`❌ Manual transaction failed: ${err}`)
-                        }
-                      }}
-                    >
-                      Try Direct Transaction
-                    </Button>
-                  </>
-                )
-              })()}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 ml-2"
+                onClick={async () => {
+                  try {
+                    addDebugLog("🔄 Manual transaction attempt...")
+                    const result = await (window as any).ethereum?.request?.({
+                      method: 'eth_sendTransaction',
+                      params: [{
+                        from: address,
+                        to: USDC_ADDRESS,
+                        data: '0x095ea7b3' +
+                              COMET_ADDRESS.slice(2).padStart(64, '0') +
+                              rawAmount.toString(16).padStart(64, '0'),
+                        value: '0x0'
+                      }]
+                    })
+                    addDebugLog(`✅ Manual transaction sent: ${result}`)
+                  } catch (err) {
+                    addDebugLog(`❌ Manual transaction failed: ${err}`)
+                  }
+                }}
+              >
+                Try Direct Transaction
+              </Button>
             </div>
           )}
         </CardContent>
