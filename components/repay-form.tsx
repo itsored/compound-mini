@@ -9,6 +9,7 @@ import { formatCurrency, formatPercentage } from "@/lib/utils"
 import { ArrowDownLeft, CheckCircle, Shield, Zap, TrendingUp } from "lucide-react"
 import Image from "next/image"
 import { useFeedback } from "@/lib/feedback-provider"
+import { isTelegramEnv } from "@/lib/utils"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 import { useAccount, useWriteContract } from "wagmi"
@@ -17,7 +18,7 @@ import { parseUnits } from "viem"
 
 export function RepayForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, connector } = useAccount() as any
   const { writeContractAsync } = useWriteContract()
 
   const [amount, setAmount] = useState("")
@@ -33,6 +34,24 @@ export function RepayForm() {
   const USDC_DECIMALS = 6
   const USDC_PRICE_USD = 1 // USDC is pegged to USD
   
+  const isTelegram = isTelegramEnv()
+
+  const wakeWalletIfNeeded = () => {
+    try {
+      // Only attempt to foreground wallet on Telegram + WalletConnect sessions
+      const isWc = connector?.id === "walletConnect"
+      if (!isTelegram || !isWc) return
+      // Try MetaMask app deep link first, then universal link
+      const mmDeep = "metamask://"
+      const mmUniversal = "https://metamask.app.link"
+      // @ts-ignore Telegram type
+      const openLink = (url: string) => (window as any)?.Telegram?.WebApp?.openLink?.(url, { try_instant_view: false })
+      openLink(mmDeep)
+      setTimeout(() => {
+        try { openLink(mmUniversal) } catch {}
+      }, 400)
+    } catch {}
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -144,6 +163,8 @@ export function RepayForm() {
 
       if (allowance < rawAmount) {
         showLoading("Approving USDC...")
+        // Wake wallet if Telegram WebApp might hide prompts
+        const wakeTimer = setTimeout(wakeWalletIfNeeded, 700)
         const approveHash = await writeContractAsync({
           address: USDC_ADDRESS,
           abi: erc20Abi as any,
@@ -152,12 +173,14 @@ export function RepayForm() {
           account: address,
           
         })
+        clearTimeout(wakeTimer)
         await publicClient.waitForTransactionReceipt({ hash: approveHash })
         showSuccess("Approval successful", "USDC approved for Compound Mini.")
       }
 
       // Execute repay (supply USDC to reduce debt)
       showLoading(`Repaying ${amount} USDC...`)
+      const wakeTimer2 = setTimeout(wakeWalletIfNeeded, 700)
       const repayHash = await writeContractAsync({
         address: COMET_ADDRESS,
         abi: cometAbi as any,
@@ -166,6 +189,7 @@ export function RepayForm() {
         account: address,
         
       })
+      clearTimeout(wakeTimer2)
       await publicClient.waitForTransactionReceipt({ hash: repayHash })
 
       hideLoading()
