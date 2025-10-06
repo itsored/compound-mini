@@ -11,7 +11,7 @@ import Image from "next/image"
 import { useFeedback } from "@/lib/feedback-provider"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
-import { useAccount } from "wagmi"
+import { useAccount, useWriteContract } from "wagmi"
 import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
 import { parseUnits } from "viem"
 
@@ -44,13 +44,7 @@ export function RepayForm() {
 
   const loadRepayData = async () => {
     try {
-      const { ethers } = await import("ethers")
-      if (!(window as any).ethereum) return
-      
-      const provider = new ethers.BrowserProvider((window as any).ethereum)
-      const comet = new ethers.Contract(COMET_ADDRESS, cometAbi as any, provider)
-      
-      // Load all relevant data
+      // Load all relevant data without relying on injected providers
       const [usdcBal, borrowBal, collateralBal, utilization] = await Promise.all([
         publicClient.readContract({
           address: USDC_ADDRESS,
@@ -70,7 +64,12 @@ export function RepayForm() {
           functionName: "collateralBalanceOf",
           args: [address, WETH_ADDRESS],
         }) as Promise<bigint>,
-        comet.getUtilization() as Promise<bigint>
+        publicClient.readContract({
+          address: COMET_ADDRESS,
+          abi: cometAbi as any,
+          functionName: "getUtilization",
+          args: [],
+        }) as Promise<bigint>,
       ])
 
       const usdcValue = Number(usdcBal) / 1e6
@@ -83,7 +82,12 @@ export function RepayForm() {
       const healthFactor = borrowValue > 0 ? (collateralValueUSD * 0.85) / borrowValue : 999
 
       // Get real borrow rate
-      const borrowRate = await comet.getBorrowRate(utilization)
+      const borrowRate = await publicClient.readContract({
+        address: COMET_ADDRESS,
+        abi: cometAbi as any,
+        functionName: "getBorrowRate",
+        args: [utilization],
+      }) as bigint
       const apy = (Number(borrowRate) / 1e18) * 31536000 * 100
 
       setUsdcBalance(usdcValue)
@@ -102,6 +106,8 @@ export function RepayForm() {
   }
 
   if (!mounted) return null
+
+  const { writeContractAsync } = useWriteContract()
 
   const handleRepay = async () => {
     if (!amount || Number.parseFloat(amount) <= 0) {
@@ -123,31 +129,46 @@ export function RepayForm() {
     showLoading(`Repaying ${amount} USDC...`)
 
     try {
-      const { ethers } = await import("ethers")
-      if (!(window as any).ethereum) throw new Error("No wallet detected")
-      const provider = new ethers.BrowserProvider((window as any).ethereum)
-      const signer = await provider.getSigner()
-
-      const comet = new ethers.Contract(COMET_ADDRESS, cometAbi as any, signer)
-      const erc20 = new ethers.Contract(USDC_ADDRESS, erc20Abi as any, signer)
+      if (!address) throw new Error("No account")
       const rawAmount = parseUnits(amount, USDC_DECIMALS)
 
-      // Check allowance
-      const allowance = await erc20.allowance(address, COMET_ADDRESS)
+      // Check allowance via public client
+      const allowance = await publicClient.readContract({
+        address: USDC_ADDRESS,
+        abi: erc20Abi as any,
+        functionName: "allowance",
+        args: [address, COMET_ADDRESS],
+      }) as bigint
+
       if (allowance < rawAmount) {
         showLoading("Approving USDC...")
-        const approveTx = await erc20.approve(COMET_ADDRESS, rawAmount)
-        await approveTx.wait()
+        const approveHash = await writeContractAsync({
+          address: USDC_ADDRESS,
+          abi: erc20Abi as any,
+          functionName: "approve",
+          args: [COMET_ADDRESS, rawAmount],
+          account: address,
+        })
+        await publicClient.waitForTransactionReceipt({ hash: approveHash })
         showSuccess("Approval successful", "USDC approved for Compound Mini.")
       }
 
       // Execute repay (supply USDC to reduce debt)
       showLoading(`Repaying ${amount} USDC...`)
-      const repayTx = await comet.supply(USDC_ADDRESS, rawAmount)
-      await repayTx.wait()
+      const repayHash = await writeContractAsync({
+        address: COMET_ADDRESS,
+        abi: cometAbi as any,
+        functionName: "supply",
+        args: [USDC_ADDRESS, rawAmount],
+        account: address,
+      })
+      await publicClient.waitForTransactionReceipt({ hash: repayHash })
 
       hideLoading()
       setRepaySuccess(true)
+      try {
+        window.dispatchEvent(new Event('onchain:updated'))
+      } catch {}
     } catch (error: any) {
       hideLoading()
       const msg = error?.shortMessage || error?.reason || error?.message || "Transaction failed"
