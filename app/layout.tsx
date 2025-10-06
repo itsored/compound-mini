@@ -10,12 +10,13 @@ import { ErrorSuppressionScript } from "@/components/error-suppression-script"
 
 const inter = Inter({ subsets: ["latin"] })
 
-function getSafeMetadataBase() {
-  const raw = process.env.NEXT_PUBLIC_PUBLIC_BASE_URL
+const getSafeMetadataBase = () => {
   try {
-    if (raw && /^https?:\/\//i.test(raw)) return new URL(raw)
+    const raw = process.env.NEXT_PUBLIC_PUBLIC_BASE_URL
+    if (typeof raw === 'string' && /^https?:\/\//i.test(raw.trim())) {
+      return new URL(raw.trim())
+    }
   } catch {}
-  // Fallback to dev URL
   return new URL('http://localhost:3003')
 }
 
