@@ -11,13 +11,14 @@ import Image from "next/image"
 import { useFeedback } from "@/lib/feedback-provider"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
-import { useAccount, useWriteContract, useChainId, useSwitchChain } from "wagmi"
+import { useAccount, useWriteContract } from "wagmi"
 import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
 import { parseUnits } from "viem"
 
 export function RepayForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
   const { address, isConnected } = useAccount()
+  const { writeContractAsync } = useWriteContract()
 
   const [amount, setAmount] = useState("")
   const [borrowApy, setBorrowApy] = useState(0)
@@ -31,8 +32,7 @@ export function RepayForm() {
 
   const USDC_DECIMALS = 6
   const USDC_PRICE_USD = 1 // USDC is pegged to USD
-  const activeChainId = useChainId()
-  const { switchChainAsync } = useSwitchChain()
+  
 
   useEffect(() => {
     setMounted(true)
@@ -109,8 +109,6 @@ export function RepayForm() {
 
   if (!mounted) return null
 
-  const { writeContractAsync } = useWriteContract()
-
   const handleRepay = async () => {
     if (!amount || Number.parseFloat(amount) <= 0) {
       showError("Invalid input", "Please enter a valid amount")
@@ -134,17 +132,7 @@ export function RepayForm() {
       if (!address) throw new Error("No account")
       const rawAmount = parseUnits(amount, USDC_DECIMALS)
 
-      // Ensure correct network before writing
-      try {
-        // Determine expected chainId from viem client
-        // @ts-ignore viem publicClient has chain property
-        const expectedChainId: number | undefined = (publicClient as any)?.chain?.id
-        if (expectedChainId && activeChainId && activeChainId !== expectedChainId) {
-          await switchChainAsync({ chainId: expectedChainId })
-        }
-      } catch (switchErr) {
-        // If switch fails, continue and let write throw a clear error
-      }
+      // Network switching removed for stability in Telegram; connector will surface mismatch
 
       // Check allowance via public client
       const allowance = await publicClient.readContract({
@@ -162,9 +150,7 @@ export function RepayForm() {
           functionName: "approve",
           args: [COMET_ADDRESS, rawAmount],
           account: address,
-          // Hint the chain for connectors that require it
-          // @ts-ignore wagmi types accept chainId in options
-          chainId: activeChainId,
+          
         })
         await publicClient.waitForTransactionReceipt({ hash: approveHash })
         showSuccess("Approval successful", "USDC approved for Compound Mini.")
@@ -178,8 +164,7 @@ export function RepayForm() {
         functionName: "supply",
         args: [USDC_ADDRESS, rawAmount],
         account: address,
-        // @ts-ignore wagmi types accept chainId in options
-        chainId: activeChainId,
+        
       })
       await publicClient.waitForTransactionReceipt({ hash: repayHash })
 
