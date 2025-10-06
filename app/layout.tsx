@@ -10,12 +10,21 @@ import { ErrorSuppressionScript } from "@/components/error-suppression-script"
 
 const inter = Inter({ subsets: ["latin"] })
 
+function getSafeMetadataBase() {
+  const raw = process.env.NEXT_PUBLIC_PUBLIC_BASE_URL
+  try {
+    if (raw && /^https?:\/\//i.test(raw)) return new URL(raw)
+  } catch {}
+  // Fallback to dev URL
+  return new URL('http://localhost:3003')
+}
+
 export const metadata = {
   title: "Compound Finance",
   description: "DeFi lending and borrowing on Telegram",
     generator: 'v0.dev',
   // Ensure absolute URLs in metadata (fixes OG/Twitter in tunnels)
-  metadataBase: new URL(process.env.NEXT_PUBLIC_PUBLIC_BASE_URL || 'http://localhost:3002'),
+  metadataBase: getSafeMetadataBase(),
   icons: {
     icon: "/complogo.png",
     shortcut: "/complogo.png",
