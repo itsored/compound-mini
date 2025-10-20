@@ -36,21 +36,49 @@ export function RepayForm() {
   
   const isTelegram = isTelegramEnv()
 
-  const wakeWalletIfNeeded = () => {
+  const wakeWalletIfNeeded = (): (() => void) | undefined => {
     try {
       // Only attempt to foreground wallet on Telegram + WalletConnect sessions
       const isWc = connector?.id === "walletConnect"
       if (!isTelegram || !isWc) return
-      // Try MetaMask app deep link first, then universal link
-      const mmDeep = "metamask://"
-      const mmUniversal = "https://metamask.app.link"
-      // @ts-ignore Telegram type
-      const openLink = (url: string) => (window as any)?.Telegram?.WebApp?.openLink?.(url, { try_instant_view: false })
-      openLink(mmDeep)
-      setTimeout(() => {
-        try { openLink(mmUniversal) } catch {}
-      }, 400)
-    } catch {}
+
+      const candidates = [
+        "metamask://",
+        "https://metamask.app.link/",
+        "trust://",
+        "https://link.trustwallet.com/",
+        "rainbow://",
+        "https://rnbwapp.com/",
+        "zerion://",
+        "https://wallet.zerion.io/",
+      ]
+
+      const open = (url: string) => {
+        try {
+          ;(window as any)?.Telegram?.WebApp?.openLink?.(url, { try_instant_view: false })
+        } catch {
+          try { window.location.href = url } catch {}
+        }
+      }
+
+      // Kick off immediately, then retry a few times
+      let idx = 0
+      open(candidates[idx++])
+      const interval = setInterval(() => {
+        if (idx >= candidates.length) return
+        open(candidates[idx++])
+      }, 600)
+      const timeout = setTimeout(() => {
+        clearInterval(interval)
+      }, 3600)
+
+      return () => {
+        clearInterval(interval)
+        clearTimeout(timeout)
+      }
+    } catch {
+      return
+    }
   }
 
   useEffect(() => {
@@ -163,8 +191,7 @@ export function RepayForm() {
 
       if (allowance < rawAmount) {
         showLoading("Approving USDC...")
-        // Wake wallet if Telegram WebApp might hide prompts
-        const wakeTimer = setTimeout(wakeWalletIfNeeded, 700)
+        const stopWake = wakeWalletIfNeeded?.()
         const approveHash = await writeContractAsync({
           address: USDC_ADDRESS,
           abi: erc20Abi as any,
@@ -173,14 +200,14 @@ export function RepayForm() {
           account: address,
           
         })
-        clearTimeout(wakeTimer)
+        try { stopWake && stopWake() } catch {}
         await publicClient.waitForTransactionReceipt({ hash: approveHash })
         showSuccess("Approval successful", "USDC approved for Compound Mini.")
       }
 
       // Execute repay (supply USDC to reduce debt)
       showLoading(`Repaying ${amount} USDC...`)
-      const wakeTimer2 = setTimeout(wakeWalletIfNeeded, 700)
+      const stopWake2 = wakeWalletIfNeeded?.()
       const repayHash = await writeContractAsync({
         address: COMET_ADDRESS,
         abi: cometAbi as any,
@@ -189,7 +216,7 @@ export function RepayForm() {
         account: address,
         
       })
-      clearTimeout(wakeTimer2)
+      try { stopWake2 && stopWake2() } catch {}
       await publicClient.waitForTransactionReceipt({ hash: repayHash })
 
       hideLoading()

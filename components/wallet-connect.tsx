@@ -67,18 +67,30 @@ export function WalletConnect() {
 						const uri = m.data as string
 						console.log('🔗 WC URI ready')
 						if (inTelegram && isMobile) {
-							const mmDeepLink = `metamask://wc?uri=${encodeURIComponent(uri)}`
-							const mmUniversal = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`
-							try {
-								;(window as any).Telegram?.WebApp?.openLink?.(mmDeepLink, { try_instant_view: false })
-							} catch {}
-							setTimeout(() => {
+							const candidates = [
+								`metamask://wc?uri=${encodeURIComponent(uri)}`,
+								`https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`,
+								`rainbow://wc?uri=${encodeURIComponent(uri)}`,
+								`https://rnbwapp.com/wc?uri=${encodeURIComponent(uri)}`,
+								`trust://wc?uri=${encodeURIComponent(uri)}`,
+								`https://link.trustwallet.com/wc?uri=${encodeURIComponent(uri)}`,
+								`zerion://wc?uri=${encodeURIComponent(uri)}`,
+								`https://wallet.zerion.io/wc?uri=${encodeURIComponent(uri)}`,
+							]
+							const open = (url: string) => {
 								try {
-									(window as any).Telegram?.WebApp?.openLink?.(mmUniversal, { try_instant_view: false })
+									(window as any).Telegram?.WebApp?.openLink?.(url, { try_instant_view: false })
 								} catch {
-								window.location.href = mmUniversal
+									window.location.href = url
 								}
-							}, 400)
+							}
+							// try deep link first, then universal links
+							open(candidates[0])
+							let idx = 1
+							const timer = setInterval(() => {
+								if (idx >= candidates.length) return clearInterval(timer)
+								open(candidates[idx++])
+							}, 500)
 						}
 					}
 				})
