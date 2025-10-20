@@ -1,0 +1,7 @@
+{
+  "env": {
+    "NEXT_PUBLIC_NETWORK": "sepolia",
+    "NEXT_PUBLIC_SEPOLIA_RPC_URL": "https://sepolia.publicnode.com"
+  },
+  "buildCommand": "pnpm run build"
+}

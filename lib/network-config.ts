@@ -72,16 +72,13 @@ export function getCurrentNetworkConfig(): NetworkConfig {
   console.log('🔍 [DEBUG] Getting config for network:', net)
   const base = NETWORK_CONFIGS[net]
   console.log('🔍 [DEBUG] Base config chainId:', base.chainId)
-  // For custom, refresh rpcUrl from env on access
-  if (net === 'custom') {
-    const envRpc = (process.env.NEXT_PUBLIC_ETH_RPC_URL || process.env.ETH_RPC_URL) as string | undefined
-    console.log('🔍 [DEBUG] Custom network RPC URL:', envRpc)
-    const result = { ...base, rpcUrl: envRpc || base.rpcUrl }
-    console.log('🔍 [DEBUG] Final custom config:', result)
-    return result
-  }
-  console.log('🔍 [DEBUG] Final config:', base)
-  return base
+  
+  // Always resolve the actual RPC URL for the current network
+  const actualRpcUrl = getRpcUrl()
+  const result = { ...base, rpcUrl: actualRpcUrl }
+  
+  console.log('🔍 [DEBUG] Final config with resolved RPC:', result)
+  return result
 }
 
 // Environment variable names for each network
