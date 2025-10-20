@@ -65,8 +65,8 @@ const connectorsList = [
 		? [
 			walletConnect({
 				projectId: wcProjectId as string,
-				// Browser with injected: QR off; Telegram or no injected: QR on
-				showQrModal: isTelegram || !hasInjected(),
+				// In Telegram WebApp, avoid QR modal and rely on deep links
+				showQrModal: isTelegram ? false : !hasInjected(),
 				metadata: {
 					name: "Compound Mini",
 					description: "DeFi lending and borrowing",
