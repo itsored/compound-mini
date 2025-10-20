@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAccount, useConnect, useDisconnect } from "wagmi"
-import { injected } from "wagmi/connectors"
+import { useAccount, useDisconnect } from "wagmi"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Wallet, LogOut, Copy, Check } from "lucide-react"
@@ -17,11 +16,9 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { isTelegramEnv } from "@/lib/utils"
 
 export function WalletConnect() {
 	const { address, isConnected } = useAccount()
-	const { connect, connectors, isPending } = useConnect()
 	const { disconnect } = useDisconnect()
 	const [mounted, setMounted] = useState(false)
 	const [copied, setCopied] = useState(false)
@@ -35,85 +32,6 @@ export function WalletConnect() {
 			await navigator.clipboard.writeText(address)
 			setCopied(true)
 			setTimeout(() => setCopied(false), 2000)
-		}
-	}
-
-	const connectDefault = () => {
-		const inTelegram = isTelegramEnv()
-		const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
-		const isMobile = /iPhone|iPad|iPod|Android/i.test(ua)
-
-		console.log("🔍 Telegram WebApp detected:", !!inTelegram)
-		console.log("🔍 isMobile:", isMobile)
-		console.log("🔍 Available connectors:", connectors.map(c => c.id))
-		
-		const wc = connectors.find((c) => c.id === "walletConnect")
-		const injC = connectors.find((c) => c.id === "injected")
-
-		const hasInjected = () => {
-			try {
-				const eth = typeof window !== 'undefined' ? (window as any).ethereum : undefined
-				if (!eth) return false
-				if (Array.isArray(eth.providers)) return eth.providers.length > 0
-				return true
-			} catch { return !!injC }
-		}
-
-		if (wc) {
-			try {
-				// @ts-ignore - wagmi connector emits messages
-				wc.on?.('message', (m: any) => {
-					if (m?.type === 'display_uri' && typeof m?.data === 'string') {
-						const uri = m.data as string
-						console.log('🔗 WC URI ready')
-						if (inTelegram && isMobile) {
-							const candidates = [
-								`metamask://wc?uri=${encodeURIComponent(uri)}`,
-								`https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`,
-								`rainbow://wc?uri=${encodeURIComponent(uri)}`,
-								`https://rnbwapp.com/wc?uri=${encodeURIComponent(uri)}`,
-								`trust://wc?uri=${encodeURIComponent(uri)}`,
-								`https://link.trustwallet.com/wc?uri=${encodeURIComponent(uri)}`,
-								`zerion://wc?uri=${encodeURIComponent(uri)}`,
-								`https://wallet.zerion.io/wc?uri=${encodeURIComponent(uri)}`,
-							]
-							const open = (url: string) => {
-								try {
-									(window as any).Telegram?.WebApp?.openLink?.(url, { try_instant_view: false })
-								} catch {
-									window.location.href = url
-								}
-							}
-							// try deep link first, then universal links
-							open(candidates[0])
-							let idx = 1
-							const timer = setInterval(() => {
-								if (idx >= candidates.length) return clearInterval(timer)
-								open(candidates[idx++])
-							}, 500)
-						}
-					}
-				})
-			} catch {}
-		}
-		
-		let preferred
-		if (inTelegram) {
-			// Telegram: use WalletConnect (deep link on mobile, QR/modal on desktop)
-			preferred = wc || injC || connectors[0]
-			console.log("🔍 Telegram mode - preferred connector:", preferred?.id)
-		} else {
-			// Browser: use injected if available, otherwise WalletConnect
-			preferred = (hasInjected() && injC) ? injC : (wc || connectors[0])
-			console.log("🔍 Browser mode - preferred connector:", preferred?.id)
-		}
-		
-		if (preferred) {
-			console.log("🔍 Attempting to connect with:", preferred.id)
-			connect({ connector: preferred })
-		} else {
-			console.log("🔍 Fallback to injected connector")
-			connect({ connector: injected() })
 		}
 	}
 
@@ -170,15 +88,6 @@ export function WalletConnect() {
 		)
 	}
 
-	return (
-		<Button
-			size="sm"
-			onClick={connectDefault}
-			disabled={isPending}
-			className="bg-blue-600 hover:bg-blue-700 text-white border-0"
-		>
-			<Wallet className="h-4 w-4 mr-2" />
-			{isPending ? "Connecting..." : "Connect Wallet"}
-		</Button>
-	)
+	// Use AppKit's official button component
+	return <appkit-button />
 }
