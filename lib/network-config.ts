@@ -59,26 +59,36 @@ export const NETWORK_CONFIGS: Record<NetworkType, NetworkConfig> = {
 // Get current network from environment variable
 export function getCurrentNetwork(): NetworkType {
   const network = process.env.NEXT_PUBLIC_NETWORK as NetworkType
-  console.log('🔍 [DEBUG] Environment NEXT_PUBLIC_NETWORK:', process.env.NEXT_PUBLIC_NETWORK)
-  console.log('🔍 [DEBUG] Parsed network:', network)
   const result = network && network in NETWORK_CONFIGS ? network : 'sepolia'
-  console.log('🔍 [DEBUG] Selected network:', result)
   return result
 }
 
 // Get current network configuration
 export function getCurrentNetworkConfig(): NetworkConfig {
   const net = getCurrentNetwork()
-  console.log('🔍 [DEBUG] Getting config for network:', net)
   const base = NETWORK_CONFIGS[net]
-  console.log('🔍 [DEBUG] Base config chainId:', base.chainId)
   
-  // Always resolve the actual RPC URL for the current network
-  const actualRpcUrl = getRpcUrl()
-  const result = { ...base, rpcUrl: actualRpcUrl }
+  // Resolve RPC URL directly without calling getRpcUrl() to avoid circular dependency
+  let actualRpcUrl = base.rpcUrl
   
-  console.log('🔍 [DEBUG] Final config with resolved RPC:', result)
-  return result
+  if (net === 'sepolia') {
+    const sepoliaRpcPublic = process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL
+    const sepoliaRpc = process.env.SEPOLIA_RPC_URL
+    const infuraKey = process.env.NEXT_PUBLIC_INFURA_KEY
+    const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_KEY
+    const alchemyApiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
+    const resolvedAlchemyKey = alchemyKey || alchemyApiKey
+    
+    if (sepoliaRpcPublic) actualRpcUrl = sepoliaRpcPublic
+    else if (sepoliaRpc) actualRpcUrl = sepoliaRpc
+    else if (infuraKey) actualRpcUrl = `https://sepolia.infura.io/v3/${infuraKey}`
+    else if (resolvedAlchemyKey) actualRpcUrl = `https://eth-sepolia.g.alchemy.com/v2/${resolvedAlchemyKey}`
+    else actualRpcUrl = 'https://sepolia.publicnode.com'
+  } else if (net === 'custom') {
+    actualRpcUrl = (process.env.NEXT_PUBLIC_ETH_RPC_URL || process.env.ETH_RPC_URL || base.rpcUrl) as string
+  }
+  
+  return { ...base, rpcUrl: actualRpcUrl }
 }
 
 // Environment variable names for each network
