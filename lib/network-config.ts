@@ -61,7 +61,7 @@ export function getCurrentNetwork(): NetworkType {
   const network = process.env.NEXT_PUBLIC_NETWORK as NetworkType
   console.log('🔍 [DEBUG] Environment NEXT_PUBLIC_NETWORK:', process.env.NEXT_PUBLIC_NETWORK)
   console.log('🔍 [DEBUG] Parsed network:', network)
-  const result = network && network in NETWORK_CONFIGS ? network : 'local'
+  const result = network && network in NETWORK_CONFIGS ? network : 'sepolia'
   console.log('🔍 [DEBUG] Selected network:', result)
   return result
 }
@@ -92,8 +92,10 @@ export const NETWORK_ENV_VARS = {
   },
   sepolia: {
     RPC_URL: 'SEPOLIA_RPC_URL',
+    PUBLIC_RPC_URL: 'NEXT_PUBLIC_SEPOLIA_RPC_URL',
     INFURA_KEY: 'NEXT_PUBLIC_INFURA_KEY',
-    ALCHEMY_KEY: 'NEXT_PUBLIC_ALCHEMY_KEY'
+    ALCHEMY_KEY: 'NEXT_PUBLIC_ALCHEMY_KEY',
+    ALCHEMY_API_KEY: 'NEXT_PUBLIC_ALCHEMY_API_KEY'
   },
   custom: {
     RPC_URL: 'ETH_RPC_URL'
@@ -111,13 +113,17 @@ export function getRpcUrl(): string {
   
   if (network === 'sepolia') {
     // Try environment variables in order of preference
+    const sepoliaRpcPublic = process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL
     const sepoliaRpc = process.env.SEPOLIA_RPC_URL
     const infuraKey = process.env.NEXT_PUBLIC_INFURA_KEY
     const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_KEY
+    const alchemyApiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
+    const resolvedAlchemyKey = alchemyKey || alchemyApiKey
     
+    if (sepoliaRpcPublic) return sepoliaRpcPublic
     if (sepoliaRpc) return sepoliaRpc
     if (infuraKey) return `https://sepolia.infura.io/v3/${infuraKey}`
-    if (alchemyKey) return `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
+    if (resolvedAlchemyKey) return `https://eth-sepolia.g.alchemy.com/v2/${resolvedAlchemyKey}`
     
     // Fallback to public RPC (rate limited)
     return 'https://sepolia.publicnode.com'
