@@ -1,91 +1,53 @@
 "use client"
 
-import { ReactNode, useEffect } from "react"
-import { WagmiProvider, createConfig, http } from "wagmi"
+import { ReactNode } from "react"
+import { WagmiProvider } from "wagmi"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { injected, metaMask, walletConnect } from "wagmi/connectors"
-import { hardhat, sepolia } from "viem/chains"
-import { getCurrentNetworkConfig, getRpcUrl } from "./network-config"
-import { isTelegramEnv } from "./utils"
+import { getCurrentNetworkConfig } from "./network-config"
+import { createAppKit } from "@reown/appkit/react"
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi"
+import { cookieToInitialState, type Config } from "wagmi"
 
-// Get current network configuration
+// Resolve network and AppKit project
 const networkConfig = getCurrentNetworkConfig()
-const rpcUrl = getRpcUrl()
-
-// Create chain configuration based on current network
-const chain = networkConfig.chainId === 31337
-  ? hardhat
-  : networkConfig.chainId === 11155111
-    ? sepolia
-    : {
-        id: networkConfig.chainId,
-        name: networkConfig.name,
-        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-        rpcUrls: {
-          default: { http: [rpcUrl] },
-          public: { http: [rpcUrl] }
-        },
-        blockExplorers: {
-          default: { name: 'Explorer', url: networkConfig.explorerUrl }
-        }
-      } as const
-
-const wcProjectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID
-
-// Get the current origin for WalletConnect metadata
-const getCurrentOrigin = () => {
-  if (typeof window !== 'undefined') {
-    return window.location.origin
-  }
-  return process.env.NEXT_PUBLIC_PUBLIC_BASE_URL || 'http://localhost:3002'
+const projectId = (process.env.NEXT_PUBLIC_REOWN_PROJECT_ID || process.env.NEXT_PUBLIC_WC_PROJECT_ID) as string | undefined
+if (!projectId) {
+  // Soft guard: AppKit requires a project id, but allow app to render
+  // You can set NEXT_PUBLIC_REOWN_PROJECT_ID in .env.local
 }
 
-// Runtime env & provider detection (client-only)
-const runtimeHasWindow = typeof window !== 'undefined'
-const isTelegram = runtimeHasWindow && isTelegramEnv()
-const hasInjected = () => {
-  try {
-    const eth = runtimeHasWindow ? (window as any).ethereum : undefined
-    if (!eth) return false
-    if (Array.isArray(eth.providers)) return eth.providers.length > 0
-    return true
-  } catch {
-    return false
-  }
-}
+// Build Wagmi adapter with the current network id
+const wagmiAdapter = new WagmiAdapter({
+  projectId: projectId as string,
+  networks: [
+    {
+      id: networkConfig.chainId,
+      name: networkConfig.name,
+      nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+      rpcUrls: {
+        default: { http: [networkConfig.rpcUrl] },
+      },
+      blockExplorers: {
+        default: { name: 'Explorer', url: networkConfig.explorerUrl },
+      },
+    } as any,
+  ],
+  ssr: true,
+})
 
-const shouldIncludeWalletConnect = runtimeHasWindow && !!wcProjectId && (isTelegram || !hasInjected())
-
-const connectorsList = [
-	// Prefer generic injected (Rabby, etc.) first, then MetaMask
-	injected({ shimDisconnect: true }),
-	metaMask(),
-	// WalletConnect only when needed (Telegram or no injected wallet in browser)
-	...(shouldIncludeWalletConnect
-		? [
-			walletConnect({
-				projectId: wcProjectId as string,
-				// In Telegram WebApp, avoid QR modal and rely on deep links
-				showQrModal: isTelegram ? false : !hasInjected(),
-				metadata: {
-					name: "Compound Mini",
-					description: "DeFi lending and borrowing",
-					url: getCurrentOrigin(),
-					icons: [`${getCurrentOrigin()}/complogo.png`],
-				},
-			}),
-		]
-		: []),
-]
-
-const config = createConfig({
-	chains: [chain],
-	transports: {
-		[chain.id]: http(rpcUrl),
-	},
-	connectors: connectorsList,
-	// Add error handling for connector issues
-	ssr: false,
+// Initialize AppKit (modal + deep-link flows)
+createAppKit({
+  adapters: [wagmiAdapter],
+  projectId: projectId as string,
+  networks: wagmiAdapter.networks as any,
+  metadata: {
+    name: 'Compound Mini',
+    description: 'DeFi lending and borrowing',
+    url: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
+    icons: [typeof window !== 'undefined' ? `${window.location.origin}/complogo.png` : 'http://localhost:3000/complogo.png'],
+  },
+  // In WebViews like Telegram, AppKit avoids QR; we keep deep link fallbacks in our button
+  features: { analytics: false },
 })
 
 const queryClient = new QueryClient({
@@ -103,9 +65,9 @@ const queryClient = new QueryClient({
 })
 
 export function AppWagmiProvider({ children }: { children: ReactNode }) {
-	return (
-		<WagmiProvider config={config}>
-			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-		</WagmiProvider>
-	)
+  return (
+    <WagmiProvider config={wagmiAdapter.wagmiConfig as Config}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </WagmiProvider>
+  )
 }
