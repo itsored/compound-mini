@@ -7,13 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { TrendingUp, TrendingDown, Shield, AlertTriangle, DollarSign, PieChart } from "lucide-react"
 import { formatUnits } from "viem"
-import { publicClient } from "@/lib/comet-onchain"
+import { publicClient, COMET_ADDRESS, WETH_ADDRESS, CHAINLINK_ETH_USD_FEED } from "@/lib/comet-onchain"
 import cometAbi from "@/onchain/abis/CometInterface.json"
-
-const COMET_ADDRESS = "0xc3d688B66703497DAA19211EEdff47f25384cdc3"
-const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-const CHAINLINK_ETH_USD_FEED = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"
 
 const CHAINLINK_PRICE_FEED_ABI = [
   {
@@ -36,6 +31,8 @@ interface PortfolioData {
   totalBorrowedValue: number
   healthFactor: number
   liquidationThreshold: number
+  borrowCollateralFactor: number
+  liquidateCollateralFactor: number
   collateralRatio: number
   utilizationRate: number
   netPositionValue: number
@@ -79,7 +76,7 @@ export function PortfolioAnalytics() {
         wethCollateralBalance,
         usdcBorrowBalance,
         usdcSupplyBalance,
-        liquidationThreshold,
+        assetInfo,
         totalBorrowed,
         totalSupply
       ] = await Promise.all([
@@ -101,8 +98,12 @@ export function PortfolioAnalytics() {
           functionName: "balanceOf",
           args: [address]
         }) as Promise<bigint>,
-        // Try to get asset info, but handle errors gracefully
-        Promise.resolve({ factor: BigInt("800000000000000000") }), // Default 0.8 liquidation factor
+        publicClient.readContract({
+          address: COMET_ADDRESS,
+          abi: cometAbi as any,
+          functionName: "getAssetInfoByAddress",
+          args: [WETH_ADDRESS]
+        }) as Promise<any>,
         publicClient.readContract({
           address: COMET_ADDRESS,
           abi: cometAbi as any,
@@ -121,7 +122,7 @@ export function PortfolioAnalytics() {
         wethCollateralBalance: formatUnits(wethCollateralBalance, 18),
         usdcBorrowBalance: formatUnits(usdcBorrowBalance, 6),
         usdcSupplyBalance: formatUnits(usdcSupplyBalance, 6),
-        assetInfo: liquidationThreshold
+        assetInfo
       })
 
       // Convert to readable amounts
@@ -129,9 +130,11 @@ export function PortfolioAnalytics() {
       const usdcBorrowedAmount = Number(formatUnits(usdcBorrowBalance, 6))
       const usdcSuppliedAmount = Number(formatUnits(usdcSupplyBalance, 6))
       
-      // Extract liquidation factor from asset info
-      // Using default liquidation factor for WETH (0.8 = 80%)
-      const liquidationFactor = Number(formatUnits(liquidationThreshold.factor, 16))
+      // Extract factors from asset info
+      const borrowCollateralFactorRaw = assetInfo?.borrowCollateralFactor ?? BigInt("800000000000000000")
+      const liquidateCollateralFactorRaw = assetInfo?.liquidateCollateralFactor ?? BigInt("850000000000000000")
+      const borrowCollateralFactor = Number(formatUnits(borrowCollateralFactorRaw, 18))
+      const liquidateCollateralFactor = Number(formatUnits(liquidateCollateralFactorRaw, 18))
 
       // Calculate values
       const totalCollateralValue = wethCollateralAmount * wethPrice
@@ -140,7 +143,7 @@ export function PortfolioAnalytics() {
 
       // Calculate health factor
       const healthFactor = totalBorrowedValue > 0 
-        ? (totalCollateralValue * liquidationFactor) / totalBorrowedValue 
+        ? (totalCollateralValue * borrowCollateralFactor) / totalBorrowedValue 
         : Infinity
 
       // Calculate metrics
@@ -154,11 +157,11 @@ export function PortfolioAnalytics() {
 
       // Calculate liquidation price
       const liquidationPrice = totalBorrowedValue > 0 && wethCollateralAmount > 0
-        ? totalBorrowedValue / (wethCollateralAmount * liquidationFactor)
+        ? totalBorrowedValue / (wethCollateralAmount * (liquidateCollateralFactor || borrowCollateralFactor || 1))
         : 0
 
       // Calculate borrowing capacity
-      const maxBorrowCapacity = totalCollateralValue * liquidationFactor
+      const maxBorrowCapacity = totalCollateralValue * borrowCollateralFactor
       const currentBorrowCapacity = Math.max(0, maxBorrowCapacity - totalBorrowedValue)
 
       // Determine risk level
@@ -170,7 +173,9 @@ export function PortfolioAnalytics() {
         totalCollateralValue,
         totalBorrowedValue,
         healthFactor,
-        liquidationThreshold: liquidationFactor,
+        liquidationThreshold: borrowCollateralFactor,
+        borrowCollateralFactor,
+        liquidateCollateralFactor,
         collateralRatio,
         utilizationRate,
         netPositionValue,

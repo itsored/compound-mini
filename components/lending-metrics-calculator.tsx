@@ -12,13 +12,8 @@ import { Progress } from "@/components/ui/progress"
 import { Slider } from "@/components/ui/slider"
 import { Calculator, TrendingUp, TrendingDown, Target, Zap, AlertTriangle, DollarSign, BarChart3, PieChart } from "lucide-react"
 import { formatUnits } from "viem"
-import { publicClient } from "@/lib/comet-onchain"
+import { publicClient, COMET_ADDRESS, WETH_ADDRESS, CHAINLINK_ETH_USD_FEED } from "@/lib/comet-onchain"
 import cometAbi from "@/onchain/abis/CometInterface.json"
-
-const COMET_ADDRESS = "0xc3d688B66703497DAA19211EEdff47f25384cdc3"
-const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-const CHAINLINK_ETH_USD_FEED = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"
 
 const CHAINLINK_PRICE_FEED_ABI = [
   {
@@ -42,6 +37,8 @@ interface LendingMetrics {
   borrowAmount: number
   healthFactor: number
   liquidationPrice: number
+  collateralFactor: number
+  liquidationFactor: number
 
   // Market Rates
   supplyAPY: number
@@ -97,7 +94,8 @@ export function LendingMetricsCalculator() {
         wethCollateralBalance,
         usdcBorrowBalance,
         totalBorrowed,
-        totalSupply
+        totalSupply,
+        assetInfo
       ] = await Promise.all([
         publicClient.readContract({
           address: COMET_ADDRESS,
@@ -122,8 +120,19 @@ export function LendingMetricsCalculator() {
           abi: cometAbi as any,
           functionName: "totalSupply",
           args: []
-        }) as Promise<bigint>
+        }) as Promise<bigint>,
+        publicClient.readContract({
+          address: COMET_ADDRESS,
+          abi: cometAbi as any,
+          functionName: "getAssetInfoByAddress",
+          args: [WETH_ADDRESS]
+        }) as Promise<any>
       ])
+
+      const collateralFactorRaw = assetInfo?.borrowCollateralFactor ?? BigInt("800000000000000000")
+      const liquidationFactorRaw = assetInfo?.liquidateCollateralFactor ?? BigInt("850000000000000000")
+      const collateralFactor = Number(formatUnits(collateralFactorRaw, 18))
+      const liquidationFactor = Number(formatUnits(liquidationFactorRaw, 18))
 
       // Get rates
       const rates = await publicClient.readContract({
@@ -141,16 +150,16 @@ export function LendingMetricsCalculator() {
 
       // Calculate current metrics
       const collateralValue = collateralAmount * currentWethPrice
-      const healthFactor = borrowAmount > 0 ? (collateralValue * 0.8) / borrowAmount : Infinity
-      const liquidationPrice = borrowAmount > 0 && collateralAmount > 0 ? borrowAmount / (collateralAmount * 0.8) : 0
+      const healthFactor = borrowAmount > 0 ? (collateralValue * collateralFactor) / borrowAmount : Infinity
+      const liquidationPrice = borrowAmount > 0 && collateralAmount > 0 ? borrowAmount / (collateralAmount * liquidationFactor) : 0
 
       // Calculate rates (simplified for demo)
       const supplyAPY = utilizationRate * 0.05 // 5% max supply APY
       const borrowAPY = utilizationRate * 0.08 // 8% max borrow APY
 
       // Calculate optimal position
-      const optimalCollateral = borrowAmount > 0 ? (borrowAmount * 2) / currentWethPrice : 0 // 2x collateral ratio for safety
-      const maxSafeBorrow = (collateralAmount * currentWethPrice * 0.8) // 80% of collateral value
+      const optimalCollateral = borrowAmount > 0 ? (borrowAmount / collateralFactor) / currentWethPrice : 0
+      const maxSafeBorrow = collateralAmount * currentWethPrice * collateralFactor
       const recommendedBorrow = maxSafeBorrow * 0.75 // 75% of max safe borrow
 
       // Calculate projections
@@ -173,6 +182,8 @@ export function LendingMetricsCalculator() {
         supplyAPY,
         borrowAPY,
         utilizationRate,
+        collateralFactor,
+        liquidationFactor,
         projectedHealthFactor,
         projectedLiquidationPrice,
         netYield,
@@ -202,8 +213,8 @@ export function LendingMetricsCalculator() {
     if (!metrics || !wethPrice) return metrics as LendingMetrics
 
     const projectedCollateralValue = newCollateral * wethPrice
-    const projectedHealthFactor = newBorrow > 0 ? (projectedCollateralValue * 0.8) / newBorrow : Infinity
-    const projectedLiquidationPrice = newBorrow > 0 && newCollateral > 0 ? newBorrow / (newCollateral * 0.8) : 0
+    const projectedHealthFactor = newBorrow > 0 ? (projectedCollateralValue * metrics.collateralFactor) / newBorrow : Infinity
+    const projectedLiquidationPrice = newBorrow > 0 && newCollateral > 0 ? newBorrow / (newCollateral * metrics.liquidationFactor) : 0
 
     const projectedNetYield = newBorrow > 0
       ? (newBorrow * metrics.borrowAPY) - (newCollateral * wethPrice * metrics.supplyAPY * 0.1)
