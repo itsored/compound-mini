@@ -126,7 +126,7 @@ export function getRpcUrl(): string {
     if (resolvedAlchemyKey) return `https://eth-sepolia.g.alchemy.com/v2/${resolvedAlchemyKey}`
     
     // Fallback to public RPC (rate limited)
-    return 'https://sepolia.publicnode.com'
+    return 'https://ethereum-sepolia.publicnode.com'
   }
 
   if (network === 'custom') {

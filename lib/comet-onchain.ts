@@ -1,9 +1,8 @@
 "use client"
 
-import { createPublicClient, createWalletClient, http, parseUnits, defineChain, custom } from "viem"
+import { createPublicClient, http, defineChain } from "viem"
 import { hardhat, sepolia } from "viem/chains"
 import cometAbi from "./abis/comet.json"
-import erc20Abi from "./abis/erc20.json"
 import { getCurrentNetworkConfig, getRpcUrl } from "./network-config"
 
 // Get current network configuration
@@ -31,26 +30,6 @@ const chain = networkConfig.chainId === 31337
 
 export const publicClient = createPublicClient({ chain, transport: http(rpcUrl) })
 
-export function getWalletClient() {
-	console.log("🔍 [DEBUG] Creating wallet client for chain:", chain.id)
-	console.log("🔍 [DEBUG] Chain name:", chain.name)
-	if (typeof window === "undefined") throw new Error("wallet client only available in browser")
-	const ethereum = (window as any).ethereum
-	if (!ethereum) throw new Error("No wallet detected. Please install or enable a wallet (e.g. MetaMask)")
-	return createWalletClient({ chain, transport: custom(ethereum) })
-}
-
-export function getWalletPublicClient() {
-	try {
-		if (typeof window === 'undefined') return null
-		const ethereum = (window as any).ethereum
-		if (!ethereum) return null
-		return createPublicClient({ chain, transport: custom(ethereum) })
-	} catch {
-		return null
-	}
-}
-
 // Use network configuration for contract addresses
 export const COMET_ADDRESS = networkConfig.cometAddress
 export const USDC_ADDRESS = networkConfig.usdcAddress
@@ -73,16 +52,3 @@ export async function getRates() {
 	])) as [bigint, bigint]
 	return { utilization: util, supplyRate, borrowRate }
 }
-
-export async function approve(asset: `0x${string}`, owner: `0x${string}`, spender: `0x${string}`, amount: bigint) {
-	const hash = await getWalletClient().writeContract({ address: asset, abi: erc20Abi, functionName: "approve", args: [spender, amount], account: owner })
-	return hash
-}
-
-export async function supply(asset: `0x${string}`, account: `0x${string}`, amount: bigint) {
-	return await getWalletClient().writeContract({ address: COMET_ADDRESS, abi: cometAbi, functionName: "supply", args: [asset, amount], account })
-}
-
-export async function withdraw(asset: `0x${string}`, account: `0x${string}`, amount: bigint) {
-	return await getWalletClient().writeContract({ address: COMET_ADDRESS, abi: cometAbi, functionName: "withdraw", args: [asset, amount], account })
-} 

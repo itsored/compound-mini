@@ -4,22 +4,20 @@ import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { 
   PiggyBank, 
   TrendingUp, 
   ArrowRight, 
   CheckCircle,
-  AlertCircle,
   Shield,
   Zap
 } from "lucide-react"
 import { useFeedback } from "@/lib/feedback-provider"
-import { useAccount } from "wagmi"
+import { useAccount, useWriteContract } from "wagmi"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { publicClient, WETH_ADDRESS, COMET_ADDRESS, USDC_ADDRESS, approve as viemApprove, supply as viemSupply } from "@/lib/comet-onchain"
-import { checkBalanceAfterTransaction, waitForBlockConfirmation } from "@/lib/simple-debug"
+import { publicClient, WETH_ADDRESS, COMET_ADDRESS } from "@/lib/comet-onchain"
+import { waitForBlockConfirmation } from "@/lib/simple-debug"
 import { parseUnits } from "viem"
 import erc20Abi from "@/lib/abis/erc20.json"
 import cometAbi from "@/lib/abis/comet.json"
@@ -27,6 +25,7 @@ import cometAbi from "@/lib/abis/comet.json"
 export function SupplyForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
   const { address, isConnected } = useAccount()
+  const { writeContractAsync } = useWriteContract()
 
   const [amount, setAmount] = useState("")
   const [wethBalance, setWethBalance] = useState(0)
@@ -166,15 +165,25 @@ export function SupplyForm() {
       if (currentAllowance < value) {
         showLoading("Approving WETH...")
         console.log("🔍 [DEBUG] About to approve with wallet client")
-        const approveHash = await viemApprove(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, COMET_ADDRESS as `0x${string}`, value)
-        await waitForBlockConfirmation(publicClient, approveHash as `0x${string}`)
+        const approveHash = await writeContractAsync({
+          address: WETH_ADDRESS as `0x${string}`,
+          abi: erc20Abi as any,
+          functionName: "approve",
+          args: [COMET_ADDRESS as `0x${string}`, value],
+        })
+        await waitForBlockConfirmation(publicClient, approveHash)
         console.log("🔍 [DEBUG] Approval transaction confirmed")
         showSuccess("Approval successful", "WETH approved for Compound Mini.")
       }
 
       showLoading("Supplying WETH...")
-      const supplyHash = await viemSupply(WETH_ADDRESS as `0x${string}`, address as `0x${string}`, value)
-      await waitForBlockConfirmation(publicClient, supplyHash as `0x${string}`)
+      const supplyHash = await writeContractAsync({
+        address: COMET_ADDRESS as `0x${string}`,
+        abi: cometAbi as any,
+        functionName: "supply",
+        args: [WETH_ADDRESS as `0x${string}`, value],
+      })
+      await waitForBlockConfirmation(publicClient, supplyHash)
       console.log("🔍 [DEBUG] Supply transaction confirmed")
 
       console.log("🔍 [DEBUG] Transaction confirmed, updating local state...")

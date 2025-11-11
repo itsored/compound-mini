@@ -5,19 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { formatCurrency, formatPercentage } from "@/lib/utils"
+import { formatCurrency } from "@/lib/utils"
 import { ArrowUpRight, CheckCircle, Shield, Zap, TrendingUp } from "lucide-react"
 import Image from "next/image"
 import { useFeedback } from "@/lib/feedback-provider"
 import cometAbi from "@/lib/abis/comet.json"
-import erc20Abi from "@/lib/abis/erc20.json"
-import { useAccount } from "wagmi"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
+import { useAccount, useWriteContract } from "wagmi"
+import { publicClient, COMET_ADDRESS, WETH_ADDRESS } from "@/lib/comet-onchain"
 import { parseUnits } from "viem"
 
 export function WithdrawForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
   const { address, isConnected } = useAccount()
+  const { writeContractAsync } = useWriteContract()
 
   const [amount, setAmount] = useState("")
   const [supplyApy, setSupplyApy] = useState(0)
@@ -43,38 +43,41 @@ export function WithdrawForm() {
 
   const loadWithdrawData = async () => {
     try {
-      const { ethers } = await import("ethers")
-      if (!(window as any).ethereum) return
-      
-      const provider = new ethers.BrowserProvider((window as any).ethereum)
-      const comet = new ethers.Contract(COMET_ADDRESS, cometAbi as any, provider)
-      
-      // Load all relevant data
+      if (!address) return
+
       const [collateralBal, borrowBal, utilization] = await Promise.all([
         publicClient.readContract({
           address: COMET_ADDRESS,
           abi: cometAbi as any,
           functionName: "collateralBalanceOf",
-          args: [address, WETH_ADDRESS],
+          args: [address as `0x${string}`, WETH_ADDRESS as `0x${string}`],
         }) as Promise<bigint>,
         publicClient.readContract({
           address: COMET_ADDRESS,
           abi: cometAbi as any,
           functionName: "borrowBalanceOf",
-          args: [address],
+          args: [address as `0x${string}`],
         }) as Promise<bigint>,
-        comet.getUtilization() as Promise<bigint>
+        publicClient.readContract({
+          address: COMET_ADDRESS,
+          abi: cometAbi as any,
+          functionName: "getUtilization",
+        }) as Promise<bigint>,
       ])
+
+      const supplyRate = (await publicClient.readContract({
+        address: COMET_ADDRESS,
+        abi: cometAbi as any,
+        functionName: "getSupplyRate",
+        args: [utilization],
+      })) as bigint
 
       const collateralValue = Number(collateralBal) / 1e18
       const borrowValue = Number(borrowBal) / 1e6
-      
-      // Calculate health factor
+
       const collateralValueUSD = collateralValue * WETH_PRICE_USD
       const healthFactor = borrowValue > 0 ? (collateralValueUSD * 0.85) / borrowValue : 999
 
-      // Get real supply rate
-      const supplyRate = await comet.getSupplyRate(utilization)
       const apy = (Number(supplyRate) / 1e18) * 31536000 * 100
 
       setCollateralBalance(collateralValue)
@@ -121,18 +124,21 @@ export function WithdrawForm() {
     showLoading(`Withdrawing ${amount} WETH...`)
 
     try {
-      const { ethers } = await import("ethers")
-      if (!(window as any).ethereum) throw new Error("No wallet detected")
-      const provider = new ethers.BrowserProvider((window as any).ethereum)
-      const signer = await provider.getSigner()
+      if (!address) {
+        throw new Error("No wallet address available")
+      }
 
-      const comet = new ethers.Contract(COMET_ADDRESS, cometAbi as any, signer)
       const rawAmount = parseUnits(amount, WETH_DECIMALS)
 
-      // Execute withdraw
       showLoading(`Withdrawing ${amount} WETH...`)
-      const withdrawTx = await comet.withdraw(WETH_ADDRESS, rawAmount)
-      await withdrawTx.wait()
+      const withdrawHash = await writeContractAsync({
+        address: COMET_ADDRESS,
+        abi: cometAbi as any,
+        functionName: "withdraw",
+        args: [WETH_ADDRESS as `0x${string}`, rawAmount],
+        account: address as `0x${string}`,
+      })
+      await publicClient.waitForTransactionReceipt({ hash: withdrawHash })
 
       hideLoading()
       setWithdrawSuccess(true)

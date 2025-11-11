@@ -5,19 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { formatCurrency, formatPercentage } from "@/lib/utils"
+import { formatCurrency } from "@/lib/utils"
 import { ArrowDownRight, CheckCircle, Shield, Zap, TrendingUp } from "lucide-react"
 import Image from "next/image"
 import { useFeedback } from "@/lib/feedback-provider"
 import cometAbi from "@/lib/abis/comet.json"
-import erc20Abi from "@/lib/abis/erc20.json"
-import { useAccount } from "wagmi"
+import { useAccount, useWriteContract } from "wagmi"
 import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
 import { parseUnits } from "viem"
 
 export function BorrowForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
   const { address, isConnected } = useAccount()
+  const { writeContractAsync } = useWriteContract()
 
   const [amount, setAmount] = useState("")
   const [borrowApy, setBorrowApy] = useState(0)
@@ -112,24 +112,31 @@ export function BorrowForm() {
     showLoading(`Borrowing ${amount} USDC...`)
 
     try {
-      const { ethers } = await import("ethers")
-      if (!(window as any).ethereum) throw new Error("No wallet detected")
-      const provider = new ethers.BrowserProvider((window as any).ethereum)
-      const signer = await provider.getSigner()
+      if (!address) {
+        throw new Error("No wallet address available")
+      }
 
-      const comet = new ethers.Contract(COMET_ADDRESS, cometAbi as any, signer)
       const rawAmount = parseUnits(amount, USDC_DECIMALS)
 
-      // Check minimum borrow
-      const minBorrow = await comet.baseBorrowMin()
+      const minBorrow = (await publicClient.readContract({
+        address: COMET_ADDRESS,
+        abi: cometAbi as any,
+        functionName: "baseBorrowMin",
+      })) as bigint
+
       if (rawAmount < minBorrow) {
         throw new Error(`Minimum borrow is ${Number(minBorrow) / 1e6} USDC`)
       }
 
-      // Execute borrow
       showLoading(`Borrowing ${amount} USDC...`)
-      const borrowTx = await comet.withdraw(USDC_ADDRESS, rawAmount)
-      await borrowTx.wait()
+      const borrowHash = await writeContractAsync({
+        address: COMET_ADDRESS,
+        abi: cometAbi as any,
+        functionName: "withdraw",
+        args: [USDC_ADDRESS, rawAmount],
+        account: address as `0x${string}`,
+      })
+      await publicClient.waitForTransactionReceipt({ hash: borrowHash })
 
       hideLoading()
       setBorrowSuccess(true)
@@ -144,12 +151,11 @@ export function BorrowForm() {
 
   const handleMaxClick = async () => {
     try {
-      const { ethers } = await import("ethers")
-      if (!(window as any).ethereum) return
-      
-      const provider = new ethers.BrowserProvider((window as any).ethereum)
-      const comet = new ethers.Contract(COMET_ADDRESS, cometAbi as any, provider)
-      const minBorrow = await comet.baseBorrowMin()
+      const minBorrow = (await publicClient.readContract({
+        address: COMET_ADDRESS,
+        abi: cometAbi as any,
+        functionName: "baseBorrowMin",
+      })) as bigint
       setAmount((Number(minBorrow) / 1e6).toString())
     } catch (error) {
       console.error("Error getting minimum borrow:", error)

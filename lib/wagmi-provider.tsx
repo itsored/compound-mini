@@ -12,8 +12,9 @@ import { cookieToInitialState, type Config } from "wagmi"
 const networkConfig = getCurrentNetworkConfig()
 const projectId = (process.env.NEXT_PUBLIC_REOWN_PROJECT_ID || process.env.NEXT_PUBLIC_WC_PROJECT_ID) as string | undefined
 if (!projectId) {
-  // Soft guard: AppKit requires a project id, but allow app to render
-  // You can set NEXT_PUBLIC_REOWN_PROJECT_ID in .env.local
+  throw new Error(
+    "Reown AppKit project ID is missing. Set NEXT_PUBLIC_REOWN_PROJECT_ID or NEXT_PUBLIC_WC_PROJECT_ID in your environment.",
+  )
 }
 
 // Build Wagmi adapter with the current network id
