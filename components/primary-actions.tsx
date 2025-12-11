@@ -1,6 +1,7 @@
 "use client"
 
 import { useAccount } from "wagmi"
+import { useGuestMode } from "@/lib/guest-mode"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { 
@@ -29,6 +30,7 @@ interface ActionState {
 
 export function PrimaryActions() {
   const { address, isConnected } = useAccount()
+  const { guest } = useGuestMode()
   const [actionState, setActionState] = useState<ActionState | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -86,7 +88,7 @@ export function PrimaryActions() {
     }
   }
 
-  if (!isConnected) {
+  if (!isConnected || guest) {
     return null // Don't show actions if not connected
   }
 

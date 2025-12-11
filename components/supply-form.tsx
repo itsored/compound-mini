@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { useFeedback } from "@/lib/feedback-provider"
 import { useAccount, useWriteContract } from "wagmi"
+import { useGuestMode } from "@/lib/guest-mode"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { publicClient, WETH_ADDRESS, COMET_ADDRESS } from "@/lib/comet-onchain"
@@ -25,6 +26,7 @@ import cometAbi from "@/lib/abis/comet.json"
 export function SupplyForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
   const { address, isConnected } = useAccount()
+  const { guest } = useGuestMode()
   const { writeContractAsync } = useWriteContract()
 
   const [amount, setAmount] = useState("")
@@ -104,7 +106,7 @@ export function SupplyForm() {
 
   if (!mounted) return null
 
-  if (!isConnected) {
+  if (!isConnected || guest) {
     return (
       <div className="p-4 pb-24">
         <Card className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 border-blue-500/20 text-white">
@@ -112,9 +114,9 @@ export function SupplyForm() {
             <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <PiggyBank className="h-10 w-10 text-blue-400" />
             </div>
-            <h2 className="text-2xl font-semibold mb-3">Connect Your Wallet</h2>
+            <h2 className="text-2xl font-semibold mb-3">{guest ? "Guest mode" : "Connect Your Wallet"}</h2>
             <p className="text-gray-400 mb-6">
-              Connect your wallet to start supplying WETH and earning interest.
+              {guest ? "You’re touring in guest mode. Connect a wallet to supply WETH." : "Connect your wallet to start supplying WETH and earning interest."}
             </p>
             <Button 
               size="lg" 
@@ -134,6 +136,10 @@ export function SupplyForm() {
   }
 
   const handleSupply = async () => {
+    if (guest) {
+      showError("Guest mode", "Connect a wallet to supply assets.")
+      return
+    }
     if (!amount || Number.parseFloat(amount) <= 0) {
       showError("Invalid Amount", "Please enter a valid amount to supply")
       return
@@ -366,7 +372,7 @@ export function SupplyForm() {
           <Button
             className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white h-14 text-lg font-semibold"
             onClick={handleSupply}
-            disabled={!isConnected || !amount || Number.parseFloat(amount) <= 0 || Number.parseFloat(amount) > wethBalance || isSubmitting}
+            disabled={!isConnected || guest || !amount || Number.parseFloat(amount) <= 0 || Number.parseFloat(amount) > wethBalance || isSubmitting}
           >
             {isSubmitting ? (
               <div className="flex items-center">

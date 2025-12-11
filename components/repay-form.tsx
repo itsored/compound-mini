@@ -10,6 +10,7 @@ import { ArrowDownLeft, CheckCircle, Shield, Zap, TrendingUp } from "lucide-reac
 import Image from "next/image"
 import { useFeedback } from "@/lib/feedback-provider"
 import { isTelegramEnv } from "@/lib/utils"
+import { useGuestMode } from "@/lib/guest-mode"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 import { useAccount, useWriteContract } from "wagmi"
@@ -20,6 +21,7 @@ export function RepayForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
   const { address, isConnected, connector } = useAccount() as any
   const { writeContractAsync } = useWriteContract()
+  const { guest } = useGuestMode()
 
   const [amount, setAmount] = useState("")
   const [borrowApy, setBorrowApy] = useState(0)
@@ -86,10 +88,10 @@ export function RepayForm() {
   }, [])
 
   useEffect(() => {
-    if (isConnected && address) {
+    if (isConnected && address && !guest) {
       loadRepayData()
     }
-  }, [isConnected, address])
+  }, [isConnected, address, guest])
 
   const loadRepayData = async () => {
     try {
@@ -169,6 +171,11 @@ export function RepayForm() {
 
     if (Number.parseFloat(amount) > usdcBalance) {
       showError("Insufficient Balance", `You only have ${formatCurrency(usdcBalance, "USDC")} available`)
+      return
+    }
+
+    if (guest) {
+      showError("Guest mode", "Connect a wallet to repay.")
       return
     }
 
@@ -289,15 +296,15 @@ export function RepayForm() {
     )
   }
 
-  if (!isConnected) {
+  if (!isConnected || guest) {
     return (
       <div className="p-4">
         <Card className="bg-[#1a1d26] border-[#2a2d36] text-white text-center py-8">
           <CardHeader>
             <Image src="/usdc-icon.webp" alt="USDC" width={60} height={60} className="mx-auto mb-4" />
-            <CardTitle className="text-2xl">Connect Wallet to Repay</CardTitle>
+            <CardTitle className="text-2xl">{guest ? "Guest mode" : "Connect Wallet to Repay"}</CardTitle>
             <CardDescription className="text-gray-400">
-              Please connect your wallet to repay your USDC debt.
+              {guest ? "You’re touring in guest mode. Connect a wallet to repay debt." : "Please connect your wallet to repay your USDC debt."}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -410,7 +417,7 @@ export function RepayForm() {
           <Button
             className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white h-12 text-lg font-semibold"
             onClick={handleRepay}
-            disabled={!isConnected || isSubmitting || !amount || Number.parseFloat(amount) <= 0 || borrowBalance <= 0 || Number.parseFloat(amount) > usdcBalance}
+            disabled={!isConnected || guest || isSubmitting || !amount || Number.parseFloat(amount) <= 0 || borrowBalance <= 0 || Number.parseFloat(amount) > usdcBalance}
           >
             {isSubmitting ? (
               <div className="flex items-center">

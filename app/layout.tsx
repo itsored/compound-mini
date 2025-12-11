@@ -5,6 +5,7 @@ import { TelegramProvider } from "@/lib/telegram-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { FeedbackProvider } from "@/lib/feedback-provider"
 import { AppWagmiProvider } from "@/lib/wagmi-provider"
+import { GuestModeProvider } from "@/lib/guest-mode"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ErrorSuppressionScript } from "@/components/error-suppression-script"
 
@@ -58,12 +59,14 @@ export default function RootLayout({
         <ErrorBoundary>
           <ErrorSuppressionScript />
           <AppWagmiProvider>
-            <TelegramProvider>
-              <FeedbackProvider>
-                {children}
-                <Toaster />
-              </FeedbackProvider>
-            </TelegramProvider>
+            <GuestModeProvider>
+              <TelegramProvider>
+                <FeedbackProvider>
+                  {children}
+                  <Toaster />
+                </FeedbackProvider>
+              </TelegramProvider>
+            </GuestModeProvider>
           </AppWagmiProvider>
         </ErrorBoundary>
       </body>

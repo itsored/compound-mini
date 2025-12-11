@@ -4,9 +4,11 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
+import { useGuestMode } from "@/lib/guest-mode"
 
 export function WelcomeMessage() {
   const [showWelcome, setShowWelcome] = useState(false)
+  const { enterGuest, guest } = useGuestMode()
 
   useEffect(() => {
     // Check if this is the first visit
@@ -20,42 +22,57 @@ export function WelcomeMessage() {
   if (!showWelcome) return null
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <Card className="bg-[#1a1d26] border-[#2a2d36] text-white max-w-md w-full">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-xl">Welcome to Compound Finance</CardTitle>
-            <Button variant="ghost" size="icon" onClick={() => setShowWelcome(false)}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <Card className="w-full max-w-md text-text-primary border border-compound-success-500/30 bg-gradient-to-br from-bg-secondary/90 via-bg-secondary/80 to-compound-success-950/40 shadow-2xl">
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-compound-success-900/50 px-3 py-1 text-xs font-semibold text-compound-success-200 border border-compound-success-700/40">
+                <span className="h-2 w-2 rounded-full bg-compound-success-400 animate-pulse" />
+                Welcome aboard
+              </div>
+              <CardTitle className="mt-3 text-2xl font-bold text-compound-success-100">
+                Compound Mini
+              </CardTitle>
+              <CardDescription className="mt-1 text-text-tertiary">
+                 Supply, borrow, and track health with ease.
+              </CardDescription>
+            </div>
+            <Button variant="ghost" size="icon" className="text-text-tertiary hover:text-text-primary" onClick={() => setShowWelcome(false)}>
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <CardDescription className="text-gray-400">DeFi Lending & Borrowing Simulation</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p>
-            This is a simulation of the Compound Finance protocol. You can supply assets, borrow against your
-            collateral, withdraw your supplied assets, and repay your borrowed assets.
-          </p>
-          <p>
-            Your wallet has been pre-loaded with 10,000 USDC and other assets for you to experiment with. All data is
-            stored locally in your browser and persists between sessions.
-          </p>
-          <div className="bg-[#252836] p-3 rounded-lg space-y-2">
-            <div className="text-sm font-medium">Simulation Features:</div>
-            <ul className="text-sm space-y-1 list-disc pl-4">
-              <li>Supply assets to earn interest</li>
-              <li>Borrow assets against your collateral</li>
-              <li>Withdraw your supplied assets</li>
-              <li>Repay your borrowed assets</li>
-              <li>View your transaction history</li>
-              <li>Refill your wallet anytime</li>
+          <div className="grid grid-cols-1 gap-3 rounded-lg border border-border-primary/40 bg-bg-tertiary/50 p-3">
+            <div className="text-sm font-semibold text-text-primary">What you can do</div>
+            <ul className="text-sm space-y-2 text-text-secondary list-disc pl-4">
+              <li>Supply, borrow, track APY, and grow your collateral</li>
+              <li>Borrow against your health factor</li>
+              <li>Withdraw or repay anytime to rebalance risk</li>
+              <li>Watch portfolio and metrics update live</li>
             </ul>
           </div>
         </CardContent>
         <CardFooter>
-          <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => setShowWelcome(false)}>
-            Start Exploring
-          </Button>
+          <div className="flex w-full gap-3">
+            <Button
+              variant="outline"
+              className="w-1/2 border-compound-success-700/40 text-compound-success-100 hover:bg-compound-success-900/40"
+              onClick={() => {
+                enterGuest()
+                setShowWelcome(false)
+              }}
+            >
+              Tour as guest
+            </Button>
+            <Button
+              className="w-1/2 bg-compound-success-500 hover:bg-compound-success-400 text-slate-950 font-semibold"
+              onClick={() => setShowWelcome(false)}
+            >
+              Connect wallet
+            </Button>
+          </div>
         </CardFooter>
       </Card>
     </div>

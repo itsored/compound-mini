@@ -11,12 +11,14 @@ import Image from "next/image"
 import { useFeedback } from "@/lib/feedback-provider"
 import cometAbi from "@/lib/abis/comet.json"
 import { useAccount, useWriteContract } from "wagmi"
+import { useGuestMode } from "@/lib/guest-mode"
 import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
 import { parseUnits } from "viem"
 
 export function BorrowForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
   const { address, isConnected } = useAccount()
+  const { guest } = useGuestMode()
   const { writeContractAsync } = useWriteContract()
 
   const [amount, setAmount] = useState("")
@@ -36,10 +38,10 @@ export function BorrowForm() {
   }, [])
 
   useEffect(() => {
-    if (isConnected && address) {
+    if (isConnected && address && !guest) {
       loadBorrowData()
     }
-  }, [isConnected, address])
+  }, [isConnected, address, guest])
 
   const loadBorrowData = async () => {
     try {
@@ -105,6 +107,11 @@ export function BorrowForm() {
 
     if (collateralBalance <= 0) {
       showError("No Collateral", "You need to supply WETH as collateral before borrowing")
+      return
+    }
+
+    if (guest) {
+      showError("Guest mode", "Connect a wallet to borrow assets.")
       return
     }
 
@@ -214,15 +221,15 @@ export function BorrowForm() {
     )
   }
 
-  if (!isConnected) {
+  if (!isConnected || guest) {
     return (
       <div className="p-4">
         <Card className="bg-[#1a1d26] border-[#2a2d36] text-white text-center py-8">
           <CardHeader>
             <Image src="/usdc-icon.webp" alt="USDC" width={60} height={60} className="mx-auto mb-4" />
-            <CardTitle className="text-2xl">Connect Wallet to Borrow</CardTitle>
+            <CardTitle className="text-2xl">{guest ? "Guest mode" : "Connect Wallet to Borrow"}</CardTitle>
             <CardDescription className="text-gray-400">
-              Please connect your wallet to borrow USDC against your collateral.
+              {guest ? "You’re touring in guest mode. Connect a wallet to borrow." : "Please connect your wallet to borrow USDC against your collateral."}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -331,7 +338,7 @@ export function BorrowForm() {
           <Button
             className="w-full bg-gradient-to-r from-yellow-600 to-red-600 hover:from-yellow-700 hover:to-red-700 text-white h-12 text-lg font-semibold"
             onClick={handleBorrow}
-            disabled={!isConnected || isSubmitting || !amount || Number.parseFloat(amount) <= 0 || collateralBalance <= 0}
+            disabled={!isConnected || guest || isSubmitting || !amount || Number.parseFloat(amount) <= 0 || collateralBalance <= 0}
           >
             {isSubmitting ? (
               <div className="flex items-center">

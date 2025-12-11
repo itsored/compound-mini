@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAccount } from "wagmi"
+import { useGuestMode } from "@/lib/guest-mode"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -48,12 +49,38 @@ interface PortfolioData {
 
 export function PortfolioAnalytics() {
   const { address } = useAccount()
+  const { guest } = useGuestMode()
   const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchPortfolioData = async () => {
-    if (!address || !publicClient) return
+    if (!publicClient) return
+    if (!address || guest) {
+      // Provide a light placeholder so guest users can see the layout
+      setPortfolioData({
+        totalCollateralValue: 0,
+        totalBorrowedValue: 0,
+        healthFactor: Infinity,
+        liquidationThreshold: 0.8,
+        borrowCollateralFactor: 0.8,
+        liquidateCollateralFactor: 0.85,
+        collateralRatio: 0,
+        utilizationRate: 0,
+        netPositionValue: 0,
+        wethCollateralAmount: 0,
+        usdcBorrowedAmount: 0,
+        usdcSuppliedAmount: 0,
+        wethPrice: 0,
+        riskLevel: 'safe',
+        liquidationPrice: 0,
+        maxBorrowCapacity: 0,
+        currentBorrowCapacity: 0
+      })
+      setLoading(false)
+      setError(null)
+      return
+    }
 
     try {
       setLoading(true)
@@ -201,7 +228,7 @@ export function PortfolioAnalytics() {
   }
 
   useEffect(() => {
-    if (address) {
+    if (address || guest) {
       fetchPortfolioData()
       const interval = setInterval(fetchPortfolioData, 30000) // Refresh every 30 seconds
       const handler = () => fetchPortfolioData()
@@ -211,7 +238,7 @@ export function PortfolioAnalytics() {
         window.removeEventListener('onchain:updated', handler)
       }
     }
-  }, [address])
+  }, [address, guest])
 
   if (loading) {
     return (

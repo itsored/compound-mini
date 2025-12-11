@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAccount } from "wagmi"
+import { useGuestMode } from "@/lib/guest-mode"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -60,6 +61,7 @@ interface LendingMetrics {
 
 export function LendingMetricsCalculator() {
   const { address } = useAccount()
+  const { guest } = useGuestMode()
   const [metrics, setMetrics] = useState<LendingMetrics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -71,7 +73,34 @@ export function LendingMetricsCalculator() {
   const [activeTab, setActiveTab] = useState<string>("current")
 
   const fetchMetrics = async () => {
-    if (!address || !publicClient) return
+    if (!publicClient) return
+    if (!address || guest) {
+      const placeholder: LendingMetrics = {
+        collateralAmount: 0,
+        borrowAmount: 0,
+        healthFactor: Infinity,
+        liquidationPrice: 0,
+        collateralFactor: 0.8,
+        liquidationFactor: 0.85,
+        supplyAPY: 0,
+        borrowAPY: 0,
+        utilizationRate: 0,
+        projectedHealthFactor: Infinity,
+        projectedLiquidationPrice: 0,
+        netYield: 0,
+        riskScore: 10,
+        optimalCollateral: 0,
+        optimalBorrow: 0,
+        maxSafeBorrow: 0,
+        recommendedBorrow: 0
+      }
+      setMetrics(placeholder)
+      setCollateralInput("0")
+      setBorrowInput("0")
+      setLoading(false)
+      setError(null)
+      return
+    }
 
     try {
       setLoading(true)
@@ -238,12 +267,12 @@ export function LendingMetricsCalculator() {
   }
 
   useEffect(() => {
-    if (address) {
+    if (address || guest) {
       fetchMetrics()
       const interval = setInterval(fetchMetrics, 30000) // Refresh every 30 seconds
       return () => clearInterval(interval)
     }
-  }, [address])
+  }, [address, guest])
 
   const getRiskBadgeVariant = (riskScore: number) => {
     if (riskScore <= 3) return 'destructive'

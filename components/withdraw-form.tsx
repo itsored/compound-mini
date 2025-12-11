@@ -11,6 +11,7 @@ import Image from "next/image"
 import { useFeedback } from "@/lib/feedback-provider"
 import cometAbi from "@/lib/abis/comet.json"
 import { useAccount, useWriteContract } from "wagmi"
+import { useGuestMode } from "@/lib/guest-mode"
 import { publicClient, COMET_ADDRESS, WETH_ADDRESS } from "@/lib/comet-onchain"
 import { parseUnits } from "viem"
 
@@ -18,6 +19,7 @@ export function WithdrawForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
   const { address, isConnected } = useAccount()
   const { writeContractAsync } = useWriteContract()
+  const { guest } = useGuestMode()
 
   const [amount, setAmount] = useState("")
   const [supplyApy, setSupplyApy] = useState(0)
@@ -36,10 +38,10 @@ export function WithdrawForm() {
   }, [])
 
   useEffect(() => {
-    if (isConnected && address) {
+    if (isConnected && address && !guest) {
       loadWithdrawData()
     }
-  }, [isConnected, address])
+  }, [isConnected, address, guest])
 
   const loadWithdrawData = async () => {
     try {
@@ -98,6 +100,11 @@ export function WithdrawForm() {
   const handleWithdraw = async () => {
     if (!amount || Number.parseFloat(amount) <= 0) {
       showError("Invalid input", "Please enter a valid amount")
+      return
+    }
+
+    if (guest) {
+      showError("Guest mode", "Connect a wallet to withdraw collateral.")
       return
     }
 
@@ -214,15 +221,15 @@ export function WithdrawForm() {
     )
   }
 
-  if (!isConnected) {
+  if (!isConnected || guest) {
     return (
       <div className="p-4">
         <Card className="bg-[#1a1d26] border-[#2a2d36] text-white text-center py-8">
           <CardHeader>
             <Image src="/weth-icon.png" alt="WETH" width={60} height={60} className="mx-auto mb-4" />
-            <CardTitle className="text-2xl">Connect Wallet to Withdraw</CardTitle>
+            <CardTitle className="text-2xl">{guest ? "Guest mode" : "Connect Wallet to Withdraw"}</CardTitle>
             <CardDescription className="text-gray-400">
-              Please connect your wallet to withdraw your WETH collateral.
+              {guest ? "You’re touring in guest mode. Connect a wallet to manage collateral." : "Please connect your wallet to withdraw your WETH collateral."}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -341,7 +348,7 @@ export function WithdrawForm() {
           <Button
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-12 text-lg font-semibold"
             onClick={handleWithdraw}
-            disabled={!isConnected || isSubmitting || !amount || Number.parseFloat(amount) <= 0 || collateralBalance <= 0 || Number.parseFloat(amount) > collateralBalance}
+            disabled={!isConnected || guest || isSubmitting || !amount || Number.parseFloat(amount) <= 0 || collateralBalance <= 0 || Number.parseFloat(amount) > collateralBalance}
           >
             {isSubmitting ? (
               <div className="flex items-center">
