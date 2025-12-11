@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import { useAccount } from "wagmi"
 
 interface GuestContextValue {
   guest: boolean
@@ -14,6 +15,7 @@ const STORAGE_KEY = "compound_guest_mode"
 
 export function GuestModeProvider({ children }: { children: ReactNode }) {
   const [guest, setGuest] = useState(false)
+  const { isConnected } = useAccount()
 
   useEffect(() => {
     try {
@@ -39,6 +41,13 @@ export function GuestModeProvider({ children }: { children: ReactNode }) {
   }
 
   const value = useMemo(() => ({ guest, enterGuest, exitGuest }), [guest])
+
+  // Auto-exit guest mode when a wallet connects
+  useEffect(() => {
+    if (isConnected && guest) {
+      exitGuest()
+    }
+  }, [isConnected, guest])
 
   return <GuestContext.Provider value={value}>{children}</GuestContext.Provider>
 }

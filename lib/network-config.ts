@@ -79,11 +79,13 @@ export function getCurrentNetworkConfig(): NetworkConfig {
     const alchemyApiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
     const resolvedAlchemyKey = alchemyKey || alchemyApiKey
     
+    const preferredSepoliaRpc = 'https://eth-sepolia.g.alchemy.com/v2/l8MuEZH4Xyi2Mq5gR42_C'
+
     if (sepoliaRpcPublic) actualRpcUrl = sepoliaRpcPublic
     else if (sepoliaRpc) actualRpcUrl = sepoliaRpc
     else if (infuraKey) actualRpcUrl = `https://sepolia.infura.io/v3/${infuraKey}`
     else if (resolvedAlchemyKey) actualRpcUrl = `https://eth-sepolia.g.alchemy.com/v2/${resolvedAlchemyKey}`
-    else actualRpcUrl = 'https://sepolia.publicnode.com'
+    else actualRpcUrl = preferredSepoliaRpc
   } else if (net === 'custom') {
     actualRpcUrl = (process.env.NEXT_PUBLIC_ETH_RPC_URL || process.env.ETH_RPC_URL || base.rpcUrl) as string
   }

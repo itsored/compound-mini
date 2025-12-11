@@ -17,6 +17,15 @@ if (!projectId) {
   )
 }
 
+// Prefer primary RPC but keep resilient fallbacks
+const rpcCandidates = Array.from(
+  new Set([
+    networkConfig.rpcUrl,
+    "https://ethereum-sepolia.publicnode.com",
+    "https://sepolia.publicnode.com",
+  ].filter(Boolean))
+)
+
 // Build Wagmi adapter with the current network id
 const wagmiAdapter = new WagmiAdapter({
   projectId: projectId as string,
@@ -26,7 +35,7 @@ const wagmiAdapter = new WagmiAdapter({
       name: networkConfig.name,
       nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
       rpcUrls: {
-        default: { http: [networkConfig.rpcUrl] },
+        default: { http: rpcCandidates },
       },
       blockExplorers: {
         default: { name: 'Explorer', url: networkConfig.explorerUrl },

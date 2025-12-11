@@ -91,10 +91,14 @@ export function Dashboard() {
 								<CardHeader className="pb-2">
 									<CardTitle className="text-xl text-text-primary">Dashboard</CardTitle>
 									<CardDescription className="text-text-secondary">
-										{isConnected ? "Your on-chain positions (live from Comet v3)" : "Connect your wallet to view positions and use the actions below."}
+										{guest
+											? "(Guest mode) Touring the dashboard — connect a wallet to interact."
+											: isConnected
+												? "Your on-chain positions (live from Comet v3)"
+												: "Connect your wallet to view positions and use the actions below."}
 									</CardDescription>
 								</CardHeader>
-								{isConnected && (
+								{(isConnected || guest) && (
 									<CardContent className="flex-1 overflow-y-auto bg-bg-secondary">
 										<div className="grid grid-cols-2 gap-3 mb-3">
 											<div className="bg-bg-tertiary/60 border border-border-primary p-3 rounded-lg">
@@ -102,14 +106,14 @@ export function Dashboard() {
 													<Image src="/weth-icon.png" alt="WETH" width={16} height={16} className="rounded-full" />
 													<div className="text-xs text-text-secondary">WETH Wallet</div>
 												</div>
-												<div className="text-lg font-semibold text-text-primary">{Number(wethWalletBalance) / 1e18}</div>
+												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : Number(wethWalletBalance) / 1e18}</div>
 											</div>
 											<div className="bg-bg-tertiary/60 border border-border-primary p-3 rounded-lg">
 												<div className="flex items-center gap-2 mb-1">
 													<Image src="/usdc-icon.webp" alt="USDC" width={16} height={16} className="rounded-full" />
 													<div className="text-xs text-text-secondary">USDC Wallet</div>
 												</div>
-												<div className="text-lg font-semibold text-text-primary">{Number(usdcWalletBalance) / 1e6}</div>
+												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : Number(usdcWalletBalance) / 1e6}</div>
 											</div>
 										</div>
 										<div className="grid grid-cols-2 gap-3 mb-3">
@@ -118,22 +122,22 @@ export function Dashboard() {
 													<Image src="/weth-icon.png" alt="WETH" width={16} height={16} className="rounded-full" />
 													<div className="text-xs text-text-secondary">WETH Collateral</div>
 												</div>
-												<div className="text-lg font-semibold text-text-primary">{Number(collateralWeth) / 1e18}</div>
+												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : Number(collateralWeth) / 1e18}</div>
 											</div>
 											<div className="bg-bg-tertiary/60 border border-border-primary p-3 rounded-lg">
 												<div className="flex items-center gap-2 mb-1">
 													<Image src="/usdc-icon.webp" alt="USDC" width={16} height={16} className="rounded-full" />
 													<div className="text-xs text-text-secondary">USDC Borrowed</div>
 												</div>
-												<div className="text-lg font-semibold text-text-primary">{Number(baseBorrowed) / 1e6}</div>
+												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : Number(baseBorrowed) / 1e6}</div>
 											</div>
 										</div>
-										{/* Removed USDC Supplied section per request */}
-										{(baseSupplied === BigInt(0) && baseBorrowed === BigInt(0) && collateralWeth === BigInt(0)) && (
+										{/* Show the supplied section and Defi callout only for guest/tour when all zero, otherwise hide in guest */}
+										{(guest || (baseSupplied === BigInt(0) && baseBorrowed === BigInt(0) && collateralWeth === BigInt(0))) && (
 											<div className="bg-bg-tertiary/60 border border-border-primary p-3 rounded-lg">
 												<div className="text-sm text-text-primary mb-2">🚀 Ready to start DeFi!</div>
 												<div className="text-xs text-text-tertiary">
-													You have {Number(wethWalletBalance) / 1e18} WETH available. Use the <strong>Supply</strong> page to deposit WETH as collateral, then <strong>Borrow</strong> USDC against your collateral.
+													You have {guest ? 0 : Number(wethWalletBalance) / 1e18} WETH available. Use the <strong>Supply</strong> page to deposit WETH as collateral, then <strong>Borrow</strong> USDC against your collateral.
 												</div>
 											</div>
 										)}
