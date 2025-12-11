@@ -221,22 +221,6 @@ export function BorrowForm() {
     )
   }
 
-  if (!isConnected || guest) {
-    return (
-      <div className="p-4">
-        <Card className="bg-[#1a1d26] border-[#2a2d36] text-white text-center py-8">
-          <CardHeader>
-            <Image src="/usdc-icon.webp" alt="USDC" width={60} height={60} className="mx-auto mb-4" />
-            <CardTitle className="text-2xl">{guest ? "Guest mode" : "Connect Wallet to Borrow"}</CardTitle>
-            <CardDescription className="text-gray-400">
-              {guest ? "You’re touring in guest mode. Connect a wallet to borrow." : "Please connect your wallet to borrow USDC against your collateral."}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
-  }
-
   return (
     <div className="p-4 space-y-4 pb-24">
       {/* Current Position Card */}

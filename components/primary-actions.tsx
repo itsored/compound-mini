@@ -88,7 +88,7 @@ export function PrimaryActions() {
     }
   }
 
-  if (!isConnected || guest) {
+  if (!isConnected) {
     return null // Don't show actions if not connected
   }
 

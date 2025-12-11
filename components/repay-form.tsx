@@ -297,19 +297,7 @@ export function RepayForm() {
   }
 
   if (!isConnected || guest) {
-    return (
-      <div className="p-4">
-        <Card className="bg-[#1a1d26] border-[#2a2d36] text-white text-center py-8">
-          <CardHeader>
-            <Image src="/usdc-icon.webp" alt="USDC" width={60} height={60} className="mx-auto mb-4" />
-            <CardTitle className="text-2xl">{guest ? "Guest mode" : "Connect Wallet to Repay"}</CardTitle>
-            <CardDescription className="text-gray-400">
-              {guest ? "You’re touring in guest mode. Connect a wallet to repay debt." : "Please connect your wallet to repay your USDC debt."}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
+    // Show the form in view-only mode when guest or disconnected
   }
 
   return (

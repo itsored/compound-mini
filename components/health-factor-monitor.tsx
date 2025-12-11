@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, Shield, TrendingDown, RefreshCw, Loader2 } from "lucide-react"
 import { useAccount } from "wagmi"
+import { useGuestMode } from "@/lib/guest-mode"
 import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS, CHAINLINK_ETH_USD_FEED } from "@/lib/comet-onchain"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
@@ -40,6 +41,7 @@ interface HealthData {
 export function HealthFactorMonitor() {
   const [mounted, setMounted] = useState(false)
   const { address, isConnected } = useAccount()
+  const { guest } = useGuestMode()
   const [healthData, setHealthData] = useState<HealthData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,7 +51,22 @@ export function HealthFactorMonitor() {
   }, [])
 
   const fetchHealthData = async () => {
-    if (!mounted || !address) return
+    if (!mounted) return
+    if (!address || guest) {
+      setHealthData({
+        healthFactor: Infinity,
+        collateralValue: 0,
+        borrowValue: 0,
+        collateralRatio: 0,
+        liquidationThreshold: 0,
+        liquidationRisk: 'safe',
+        wethPrice: 0,
+        priceUpdatedAt: Date.now()
+      })
+      setLoading(false)
+      setError(null)
+      return
+    }
     
     setLoading(true)
     setError(null)
@@ -135,21 +152,14 @@ export function HealthFactorMonitor() {
     }
   }
 
-  // Load health data when wallet connects
   useEffect(() => {
-    if (mounted && isConnected) {
-      fetchHealthData()
-    }
-  }, [mounted, isConnected, address])
-
-  useEffect(() => {
-    if (isConnected && address) {
+    if (mounted) {
       fetchHealthData()
       const handler = () => fetchHealthData()
       window.addEventListener('onchain:updated', handler)
       return () => window.removeEventListener('onchain:updated', handler)
     }
-  }, [isConnected, address, mounted])
+  }, [mounted, isConnected, address, guest])
 
   const getRiskColor = (risk: 'safe' | 'warning' | 'danger') => {
     switch (risk) {
@@ -198,7 +208,7 @@ export function HealthFactorMonitor() {
               WETH collateral safety monitoring
             </CardDescription>
           </div>
-          {isConnected && (
+          {!guest && isConnected && (
             <button
               onClick={fetchHealthData}
               disabled={loading}
@@ -216,12 +226,7 @@ export function HealthFactorMonitor() {
       </CardHeader>
       
       <CardContent>
-        {!isConnected ? (
-          <div className="text-center py-6 text-text-tertiary">
-            <Shield className="mx-auto h-8 w-8 mb-2 opacity-50" />
-            <p className="text-sm">Connect your wallet to monitor health factor</p>
-          </div>
-        ) : loading && !healthData ? (
+        {loading && !healthData ? (
           <div className="text-center py-6 text-text-tertiary">
             <Loader2 className="mx-auto h-6 w-6 mb-2 animate-spin" />
             <p className="text-sm">Loading health data...</p>

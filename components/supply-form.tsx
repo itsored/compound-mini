@@ -106,31 +106,6 @@ export function SupplyForm() {
 
   if (!mounted) return null
 
-  if (!isConnected || guest) {
-    return (
-      <div className="p-4 pb-24">
-        <Card className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 border-blue-500/20 text-white">
-          <CardContent className="p-8 text-center">
-            <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <PiggyBank className="h-10 w-10 text-blue-400" />
-            </div>
-            <h2 className="text-2xl font-semibold mb-3">{guest ? "Guest mode" : "Connect Your Wallet"}</h2>
-            <p className="text-gray-400 mb-6">
-              {guest ? "You’re touring in guest mode. Connect a wallet to supply WETH." : "Connect your wallet to start supplying WETH and earning interest."}
-            </p>
-            <Button 
-              size="lg" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12"
-            >
-              <PiggyBank className="h-5 w-5 mr-2" />
-              Connect Wallet to Supply
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   const handleMaxClick = () => {
     setAmount(wethBalance.toString())
   }

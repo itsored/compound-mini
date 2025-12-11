@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAccount } from "wagmi"
+import { useGuestMode } from "@/lib/guest-mode"
 import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
@@ -18,6 +19,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 export function Dashboard() {
 	const [mounted, setMounted] = useState(false)
 	const { address, isConnected } = useAccount()
+	const { guest } = useGuestMode()
 	const [baseBorrowed, setBaseBorrowed] = useState<bigint>(BigInt(0))
 	const [collateralWeth, setCollateralWeth] = useState<bigint>(BigInt(0))
 	const [baseSupplied, setBaseSupplied] = useState<bigint>(BigInt(0))
@@ -67,8 +69,8 @@ export function Dashboard() {
 				console.error("Error loading positions:", error)
 			}
 		}
-		if (isConnected) loadPositions()
-	}, [address, isConnected])
+		if (isConnected && !guest) loadPositions()
+	}, [address, isConnected, guest])
 
 	if (!mounted) return null
 
