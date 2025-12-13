@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useAccount, useDisconnect } from "wagmi"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Wallet, LogOut, Copy, Check } from "lucide-react"
+import { Wallet, LogOut, Copy, Check, User } from "lucide-react"
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -16,10 +16,12 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useGuestMode } from "@/lib/guest-mode"
 
 export function WalletConnect() {
 	const { address, isConnected } = useAccount()
 	const { disconnect } = useDisconnect()
+	const { enterGuest, guest } = useGuestMode()
 	const [mounted, setMounted] = useState(false)
 	const [copied, setCopied] = useState(false)
 	const [confirmOpen, setConfirmOpen] = useState(false)
@@ -88,6 +90,19 @@ export function WalletConnect() {
 		)
 	}
 
-	// Use AppKit's official button component
-	return <appkit-button />
+	// Show guest mode button when not connected
+	return (
+		<div className="flex items-center gap-2">
+			<Button
+				variant="outline"
+				size="sm"
+				onClick={enterGuest}
+				className="border-compound-success-700/40 text-compound-success-100 hover:bg-compound-success-900/40"
+			>
+				<User className="h-4 w-4 mr-2" />
+				Tour as guest
+			</Button>
+			<appkit-button />
+		</div>
+	)
 }

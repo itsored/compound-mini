@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
-import { useGuestMode } from "@/lib/guest-mode"
 
 export function WelcomeMessage() {
   const [showWelcome, setShowWelcome] = useState(false)
-  const { enterGuest, guest } = useGuestMode()
+  const router = useRouter()
 
   useEffect(() => {
     // Check if this is the first visit
@@ -18,6 +18,11 @@ export function WelcomeMessage() {
       localStorage.setItem("compound_has_visited", "true")
     }
   }, [])
+
+  const handleEnter = () => {
+    setShowWelcome(false)
+    router.push("/")
+  }
 
   if (!showWelcome) return null
 
@@ -57,20 +62,10 @@ export function WelcomeMessage() {
         <CardFooter>
           <div className="flex w-full gap-3">
             <Button
-              variant="outline"
-              className="w-1/2 border-compound-success-700/40 text-compound-success-100 hover:bg-compound-success-900/40"
-              onClick={() => {
-                enterGuest()
-                setShowWelcome(false)
-              }}
+              className="w-full bg-compound-success-500 hover:bg-compound-success-400 text-slate-950 font-semibold"
+              onClick={handleEnter}
             >
-              Tour as guest
-            </Button>
-            <Button
-              className="w-1/2 bg-compound-success-500 hover:bg-compound-success-400 text-slate-950 font-semibold"
-              onClick={() => setShowWelcome(false)}
-            >
-              Connect wallet
+              Enter
             </Button>
           </div>
         </CardFooter>

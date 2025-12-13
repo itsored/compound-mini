@@ -10,7 +10,6 @@ import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/c
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 import Image from "next/image"
-import { useConnect } from "wagmi"
 
 interface UserStatus {
   hasPosition: boolean
@@ -26,28 +25,8 @@ interface UserStatus {
 
 export function MinimalHero() {
   const { address, isConnected } = useAccount()
-  const { connect, connectors, isPending } = useConnect()
   const [userStatus, setUserStatus] = useState<UserStatus | null>(null)
   const [loading, setLoading] = useState(false)
-
-  const connectDefault = () => {
-    const inTelegram = typeof window !== "undefined" && (window as any).Telegram?.WebApp
-    const wc = connectors.find((c) => c.id === "walletConnect")
-    const injC = connectors.find((c) => c.id === "injected")
-
-    const hasInjected = () => {
-      try {
-        // @ts-ignore
-        const eth = typeof window !== 'undefined' ? (window as any).ethereum : undefined
-        if (!eth) return false
-        if (Array.isArray(eth.providers)) return eth.providers.length > 0
-        return true
-      } catch { return !!injC }
-    }
-
-    const preferred = inTelegram ? (wc || injC || connectors[0]) : ((hasInjected() && injC) ? injC : (wc || connectors[0]))
-    if (preferred) connect({ connector: preferred })
-  }
 
   useEffect(() => {
     if (isConnected && address) {
@@ -189,17 +168,9 @@ export function MinimalHero() {
                     <Wallet className="h-10 w-10 text-compound-success-400" />
                   </div>
                   <h2 className="text-2xl font-semibold mb-3">Welcome to DeFi</h2>
-                  <p className="text-text-tertiary mb-8 leading-relaxed">
-                    Connect your wallet to start lending, borrowing, and earning interest on your crypto assets.
+                  <p className="text-text-tertiary leading-relaxed">
+                    Connect your wallet or tour as guest to start lending, borrowing, and earning interest on your crypto assets.
                   </p>
-                  <Button 
-                    size="lg" 
-                    className="w-full h-12 text-lg bg-gradient-to-r from-compound-success-600 to-compound-success-500 hover:from-compound-success-700 hover:to-compound-success-600 text-white border-0"
-                    onClick={connectDefault}
-                  >
-                <Wallet className="h-6 w-6 mr-3" />
-                {isPending ? "Connecting..." : "Connect Wallet"}
-              </Button>
             </div>
               ) : loading ? (
                 <div className="text-center py-12">
