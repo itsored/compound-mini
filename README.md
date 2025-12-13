@@ -1,25 +1,39 @@
 # Compound Mini App
 
-A decentralized lending and borrowing application, integrating with Compound Protocol for on-chain DeFi operations.
+A **Telegram Mini App** for decentralized lending and borrowing, integrating with Compound Protocol for on-chain DeFi operations. Built with Next.js and optimized for Telegram's WebApp environment.
 
+## 🎯 What is This?
 
-## Features
+This is a **Telegram Mini App** (not a traditional web application) that allows users to:
+- Supply WETH assets to earn interest
+- Borrow USDC against supplied collateral
+- Monitor portfolio health and positions
+- Manage DeFi positions directly from Telegram
 
-- 🏦 **Supply Assets**: Deposit tokens to earn interest
-- 💰 **Borrow Assets**: Borrow against your supplied collateral
-- 📊 **Portfolio Analytics**: Track your lending positions and health factor
-- 🔄 **Real-time Rates**: Live interest rates and market data
-- 🎯 **Health Factor Monitoring**: Automated risk management
-- 🌐 **Multi-Network Support**: Local mainnet fork and Sepolia testnet
-- 📱 **Responsive UI**: Modern, mobile-first design
+The app is designed to run inside Telegram's WebApp environment, providing a native mobile experience with seamless wallet integration.
 
-## Requirements
+## ✨ Features
 
-- Node.js version ≥ 18.18.0
-- npm or yarn package manager
-- Git
+- 🏦 **Supply Assets**: Deposit WETH to earn interest on Compound Protocol
+- 💰 **Borrow Assets**: Borrow USDC against your supplied WETH collateral
+- 📊 **Portfolio Analytics**: Real-time tracking of lending positions and health factor
+- 🔄 **Live Rates**: Dynamic interest rates and market data from Compound
+- 🎯 **Health Factor Monitoring**: Automated risk management and position tracking
+- 🌐 **Multi-Network Support**: Local mainnet fork (development) and Sepolia testnet (production)
+- 📱 **Telegram Native**: Optimized for Telegram's WebApp environment with native UI integration
+- 🔐 **Wallet Integration**: Seamless wallet connection via WalletConnect and injected wallets
+- 👤 **Guest Mode**: Explore the app without connecting a wallet
 
-## Quick Start
+## 📋 Requirements
+
+- **Node.js** version ≥ 18.18.0
+- **npm** or **pnpm** package manager
+- **Git**
+- **Telegram Bot Token** (for testing as a miniapp)
+- **Alchemy or Infura API Key** (for blockchain RPC access)
+- **WalletConnect Project ID** (for wallet connections)
+
+## 🚀 Quick Start
 
 ### 1. Clone the Repository
 
@@ -34,17 +48,57 @@ cd compound-mini
 # Install main app dependencies
 npm install
 
-# Install onchain dependencies
+# Install onchain dependencies (for local development)
 cd onchain
 npm install
 cd ..
 ```
 
-### 3. Network Configuration
+### 3. Environment Configuration
+
+Create a `.env.local` file in the root directory:
+
+```bash
+# Network configuration (choose one)
+NEXT_PUBLIC_NETWORK=sepolia  # or 'local' for mainnet fork
+
+# RPC Provider (for Sepolia testnet)
+NEXT_PUBLIC_INFURA_KEY=your_infura_project_id
+# OR
+NEXT_PUBLIC_ALCHEMY_KEY=your_alchemy_api_key
+
+# WalletConnect Project ID (required for wallet connections)
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
+
+# Optional: Custom Sepolia RPC URL
+NEXT_PUBLIC_SEPOLIA_RPC_URL=https://sepolia.publicnode.com
+```
+
+**Get your WalletConnect Project ID:**
+1. Visit [cloud.reown.com](https://cloud.reown.com)
+2. Create a new project
+3. Copy your Project ID
+
+### 4. Network Configuration
 
 The app supports two network modes:
 
-#### Option A: Local Mainnet Fork (Recommended for Development)
+#### Option A: Sepolia Testnet (Recommended for Telegram Testing)
+
+```bash
+# Set network to Sepolia testnet
+echo 'NEXT_PUBLIC_NETWORK=sepolia' > .env.local
+
+# Add RPC provider (choose one)
+echo 'NEXT_PUBLIC_INFURA_KEY=your_infura_project_id' >> .env.local
+# OR
+echo 'NEXT_PUBLIC_ALCHEMY_KEY=your_alchemy_api_key' >> .env.local
+```
+
+#### Option B: Local Mainnet Fork (Development Only)
+
+For local development with a mainnet fork:
+
 ```bash
 # Set network to local mainnet fork
 echo 'NEXT_PUBLIC_NETWORK=local' > .env.local
@@ -56,20 +110,10 @@ echo 'FORK_BLOCK=23378885' >> .env
 cd ..
 ```
 
-#### Option B: Sepolia Testnet
-```bash
-# Set network to Sepolia testnet
-echo 'NEXT_PUBLIC_NETWORK=sepolia' > .env.local
-
-# Add RPC provider (choose one)
-echo 'NEXT_PUBLIC_INFURA_KEY=your_infura_project_id' >> .env.local
-# OR
-echo 'NEXT_PUBLIC_ALCHEMY_KEY=your_alchemy_api_key' >> .env.local
-```
-
 📖 **See [NETWORK_CONFIG.md](./NETWORK_CONFIG.md) for detailed network configuration guide**
 
 #### Quick Network Switching
+
 ```bash
 # Switch to local mainnet fork
 npm run switch:local
@@ -81,7 +125,7 @@ npm run switch:sepolia
 npm run test:sepolia
 ```
 
-### 4. Start the Development Server
+### 5. Start Development Server
 
 ```bash
 npm run dev
@@ -89,11 +133,80 @@ npm run dev
 
 The app will be available at [http://localhost:3000](http://localhost:3000)
 
-## Onchain Development
+**Note**: When running locally, the app will use a mock Telegram WebApp implementation for development. To test as a real Telegram Mini App, you need to deploy and configure it with a Telegram bot (see below).
+
+## 📱 Testing as a Telegram Mini App
+
+### Prerequisites
+
+1. **Telegram Bot**: Create a bot via [@BotFather](https://t.me/BotFather) on Telegram
+2. **Deployed Application**: The app must be accessible via HTTPS (required by Telegram)
+3. **Bot Configuration**: Configure your bot's Web App URL
+
+### Step 1: Deploy the Application
+
+Deploy your application to a hosting service that provides HTTPS:
+
+**Option A: Vercel (Recommended)**
+
+1. Push your code to GitHub
+2. Import your repository in [Vercel](https://vercel.com)
+3. Configure environment variables in Vercel dashboard
+4. Deploy
+
+**Option B: Other Hosting Services**
+
+Any hosting service that provides HTTPS will work (Netlify, Railway, etc.)
+
+### Step 2: Configure Telegram Bot
+
+1. Open [@BotFather](https://t.me/BotFather) on Telegram
+2. Send `/newbot` and follow instructions to create your bot
+3. Send `/newapp` to create a new Mini App
+4. Select your bot
+5. Provide a title for your Mini App
+6. Provide a short description
+7. Upload an icon (optional)
+8. **Provide your deployed app URL** (e.g., `https://your-app.vercel.app`)
+9. Optionally provide a short name for the app
+
+### Step 3: Test in Telegram
+
+1. Open your bot in Telegram
+2. Click the "Menu" button (or send `/start`)
+3. Click on your Mini App button
+4. The app will open in Telegram's WebView
+
+### Step 4: Connect Wallet
+
+When testing in Telegram:
+
+1. **In Telegram WebView**: The app automatically detects the Telegram environment
+2. **Wallet Connection**: 
+   - Click "Connect Wallet" or "Tour as guest"
+   - For WalletConnect: A QR code or deep link will appear
+   - For injected wallets: Your Telegram browser's wallet extension will be used
+3. **Guest Mode**: You can explore the app without connecting a wallet
+
+### Development vs Production Testing
+
+**Local Development (Browser)**:
+- App runs at `http://localhost:3000`
+- Uses mock Telegram WebApp API
+- Full functionality available for development
+- Wallet connections work normally
+
+**Telegram Mini App (Production)**:
+- App must be deployed with HTTPS
+- Uses real Telegram WebApp API
+- Native Telegram UI integration
+- Wallet connections optimized for mobile
+
+## 🔧 Local Development with Mainnet Fork
+
+For comprehensive testing with real Compound Protocol contracts:
 
 ### Setting Up a Local Mainnet Fork
-
-To run the application with a real mainnet fork (recommended for testing), you'll need to configure the Hardhat node with proper RPC credentials.
 
 #### 1. Create Environment File
 
@@ -174,11 +287,6 @@ npx hardhat run scripts/wrap-multiple.ts --network hardhat
 npx hardhat run scripts/wrap-half.ts --network hardhat
 ```
 
-**Wrap 100 ETH for first 5 accounts (used in this repo):**
-```bash
-npx hardhat run scripts/wrap-100-eth.ts --network hardhat
-```
-
 **Expected Results:**
 - Accounts funded with the requested WETH
 - Each account retains ample ETH for gas fees
@@ -187,18 +295,6 @@ npx hardhat run scripts/wrap-100-eth.ts --network hardhat
 - The Compound Protocol (Comet) requires WETH for supply operations
 - WETH is the wrapped version of ETH that can be used in DeFi protocols
 - Your test accounts start with 10,000 ETH but need WETH for lending/borrowing
-
-### Alternative: Fresh Local Network
-
-If you don't need mainnet data, you can run without forking:
-
-```bash
-cd onchain
-# Remove or comment out ETH_RPC_URL in .env
-npm run node
-```
-
-**Note**: Without mainnet forking, you'll only have the test accounts and no real contract data.
 
 ### Available Scripts
 
@@ -218,11 +314,6 @@ npx hardhat run scripts/wrap-half.ts --network hardhat
 **Wrap Multiple Amounts**
 ```bash
 npx hardhat run scripts/wrap-multiple.ts --network hardhat
-```
-
-**Wrap 100 ETH for First 5 Accounts**
-```bash
-npx hardhat run scripts/wrap-100-eth.ts --network hardhat
 ```
 
 #### Other Utility Scripts
@@ -259,7 +350,7 @@ cd onchain
 npm run compile
 ```
 
-## Project Structure
+## 🏗️ Project Structure
 
 ```
 compound-mini/
@@ -268,36 +359,55 @@ compound-mini/
 │   ├── supply/            # Supply page
 │   ├── withdraw/          # Withdraw page
 │   ├── repay/             # Repay page
+│   ├── dashboard/         # Dashboard page
 │   └── history/           # Transaction history
 ├── components/            # React components
 │   ├── ui/               # Reusable UI components
 │   ├── dashboard.tsx     # Main dashboard
-│   ├── asset-list.tsx    # Asset management
+│   ├── supply-form.tsx   # Supply form component
+│   ├── borrow-form.tsx   # Borrow form component
+│   ├── wallet-connect.tsx # Wallet connection UI
 │   └── ...               # Other components
 ├── lib/                  # Utility libraries
-│   ├── comet-onchain.ts  # Compound integration
-│   ├── wagmi-provider.tsx # Web3 provider
+│   ├── comet-onchain.ts  # Compound Protocol integration
+│   ├── wagmi-provider.tsx # Web3 provider configuration
+│   ├── telegram-provider.tsx # Telegram WebApp integration
+│   ├── guest-mode.tsx    # Guest mode functionality
 │   └── utils.ts          # Helper functions
 ├── onchain/              # Hardhat project
 │   ├── scripts/          # Deployment & utility scripts
 │   ├── abis/            # Contract ABIs
 │   └── hardhat.config.ts # Hardhat configuration
+├── types/                # TypeScript type definitions
+│   └── telegram.d.ts     # Telegram WebApp types
 └── public/               # Static assets
 ```
 
-## Technologies Used
+## 🛠️ Technologies Used
 
 - **Frontend**: Next.js 15, React 19, TypeScript
 - **Styling**: Tailwind CSS, Radix UI
 - **Web3**: Wagmi, Viem, Ethers.js
+- **Wallet Integration**: Reown AppKit (WalletConnect), Injected Wallets
 - **Blockchain**: Hardhat, Ethereum
 - **DeFi**: Compound Protocol (Comet)
 - **State Management**: TanStack Query
 - **Forms**: React Hook Form, Zod validation
+- **Telegram**: Telegram WebApp SDK
+- **Animations**: Framer Motion
 
-## Development Workflow
+## 🔄 Development Workflow
 
-### With Mainnet Fork (Recommended)
+### For Telegram Mini App Testing
+
+1. **Set up environment**: Configure `.env.local` with network and API keys
+2. **Start development server**: `npm run dev`
+3. **Test locally**: Open `http://localhost:3000` in browser (uses mock Telegram API)
+4. **Deploy to production**: Push to GitHub and deploy via Vercel
+5. **Configure Telegram Bot**: Set Web App URL in BotFather
+6. **Test in Telegram**: Open your bot and launch the Mini App
+
+### For Local Development with Mainnet Fork
 
 1. **Set up environment**: Create `.env` file in `onchain/` with your RPC URL
 2. **Start the local blockchain**: `cd onchain && npm run node`
@@ -305,28 +415,22 @@ compound-mini/
 4. **Wrap ETH to WETH**: Use the wrapping scripts to get WETH for testing
    - Single account: `npx hardhat run scripts/wrap-eth-simple.ts --network hardhat`
    - Multiple accounts: `npx hardhat run scripts/wrap-multiple.ts --network hardhat`
-   - 100 ETH to first 5: `npx hardhat run scripts/wrap-100-eth.ts --network hardhat`
 5. **Start the frontend**: `npm run dev`
 6. **Connect wallet**: Use MetaMask to connect to localhost:8545
 7. **Test features**: Supply, borrow, and manage positions with real contracts
 
-### With Fresh Local Network
+## 🚢 Deployment
 
-1. **Start the local blockchain**: `cd onchain && npm run node`
-2. **Wrap ETH to WETH**: Use the wrapping scripts to get WETH for testing
-   - Single account: `npx hardhat run scripts/wrap-eth-simple.ts --network hardhat`
-   - Multiple accounts: `npx hardhat run scripts/wrap-multiple.ts --network hardhat`
-3. **Start the frontend**: `npm run dev`
-4. **Connect wallet**: Use MetaMask or similar to connect to localhost:8545
-5. **Test features**: Supply, borrow, and manage positions (limited to test contracts)
+### Vercel (Recommended for Telegram Mini Apps)
 
-## Deployment
-
-### Vercel (Recommended)
-
-1. Push your changes to the `staging` branch
-2. Connect your GitHub repository to Vercel
-3. Deploy from the staging branch
+1. **Push your changes** to GitHub
+2. **Connect your GitHub repository** to Vercel
+3. **Configure environment variables** in Vercel dashboard:
+   - `NEXT_PUBLIC_NETWORK`
+   - `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
+   - `NEXT_PUBLIC_INFURA_KEY` or `NEXT_PUBLIC_ALCHEMY_KEY`
+4. **Deploy** from the main branch
+5. **Update Telegram Bot**: Set the Web App URL in BotFather to your Vercel URL
 
 ### Manual Deployment
 
@@ -335,7 +439,27 @@ npm run build
 npm run start
 ```
 
-## Contributing
+**Important**: For Telegram Mini Apps, your deployment must:
+- Be accessible via HTTPS
+- Have proper CORS headers configured
+- Be publicly accessible (no authentication required)
+
+## 🔐 Security Notes
+
+- **Never commit** `.env.local` or `.env` files to version control
+- **Use environment variables** for all sensitive keys and API tokens
+- **WalletConnect Project ID** should be kept secure
+- **RPC API keys** should have rate limits and access restrictions
+- **Telegram Bot Token** should never be exposed in client-side code
+
+## 📖 Additional Resources
+
+- [Telegram Mini Apps Documentation](https://core.telegram.org/bots/webapps)
+- [Compound Protocol Documentation](https://docs.compound.finance/)
+- [WalletConnect Documentation](https://docs.reown.com/)
+- [Next.js Documentation](https://nextjs.org/docs)
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
@@ -343,10 +467,14 @@ npm run start
 4. Push to the branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
-## License
+## 📝 License
 
 This project is licensed under the MIT License.
 
-## Support
+## 💬 Support
 
 For questions or support, please open an issue on GitHub or contact the development team.
+
+---
+
+**Note**: This is a Telegram Mini App. While it can be tested in a browser during development, it is designed to run within Telegram's WebApp environment. For the best experience, test it as a deployed Telegram Mini App.
