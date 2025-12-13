@@ -212,8 +212,11 @@ export function SupplyForm() {
             <p className="text-gray-400 mb-6">
               You're now earning interest on your supplied assets.
             </p>
-            <Button className="w-full h-12" onClick={() => setSupplySuccess(false)}>
-              Done
+            <Button 
+              onClick={() => window.location.href = "/dashboard"}
+              className="w-full bg-green-600 hover:bg-green-700 text-white h-12"
+            >
+              Go to Dashboard
             </Button>
           </CardContent>
         </Card>
