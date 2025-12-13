@@ -2,21 +2,47 @@
 
 Welcome to **Compound Mini App**! This guide will walk you through everything you need to know to get started with lending and borrowing on Compound Protocol directly from Telegram.
 
+## 💻 Recommended Platform
+
+**For the best experience, we strongly recommend using Telegram Web on desktop:**
+
+### Why Telegram Web?
+
+- ✅ **Smooth Wallet Integration:** Seamless connection with browser-based wallets (MetaMask extension, etc.)
+- ✅ **No Deep Link Issues:** Avoids common Web3 deeplink problems that occur on mobile Telegram
+- ✅ **Better Performance:** Faster loading and smoother interactions
+- ✅ **Easier Testing:** More reliable for testing all features end-to-end
+
+### How to Access Telegram Web
+
+1. Open your web browser (Chrome, Firefox, Edge, etc.)
+2. Go to **[web.telegram.org](https://web.telegram.org)**
+3. Log in with your phone number
+4. You're now using Telegram Web!
+
+**Note:** 
+- **Desktop Telegram App:** Not recommended - may have compatibility issues with Web3 wallets
+- **Mobile Telegram App:** Works but may experience deeplink issues when connecting wallets. If you encounter wallet connection problems on mobile, try Telegram Web instead.
+
+---
+
 ## 📱 Getting Started
 
 ### Step 1: Find the App on Telegram
 
-1. Open the **Telegram** app on your mobile device or desktop
+1. Open **Telegram Web** in your browser (recommended) or the Telegram app
 2. In the search bar, type **`@compoundminiapp`**
-3. Tap on the **Compound Mini App** bot
-4. Tap **Start** or send `/start` to begin
+3. Click on the **Compound Mini App** bot
+4. Click **Start** or send `/start` to begin
 
 ### Step 2: Launch the Mini App
 
 1. Once you've started the bot, you'll see a menu button
-2. Tap the **Menu** button (or the app icon if available)
-3. Tap **"Open App"** or the app button to launch the Mini App
+2. Click the **Menu** button (or the app icon if available)
+3. Click **"Open App"** or the app button to launch the Mini App
 4. The app will open in Telegram's built-in browser
+
+**Tip:** If you're using Telegram Web, the app will open in a new browser tab, making it easier to interact with your wallet extension.
 
 🎉 **Congratulations!** You're now in the Compound Mini App.
 
@@ -56,24 +82,33 @@ For this guide, we'll connect a wallet to test all features.
 ### Step 1: Get a Wallet
 
 You'll need a Web3 wallet that supports Ethereum. Popular options include:
-- **MetaMask** (Mobile app or browser extension)
+- **MetaMask** (Browser extension - **Recommended for Telegram Web**)
+- **MetaMask** (Mobile app - for mobile testing)
 - **Trust Wallet** (Mobile app)
 - **Rainbow Wallet** (Mobile app)
 - **Coinbase Wallet** (Mobile app)
 
-**For this guide, we'll use MetaMask as an example.**
+**For this guide, we'll use MetaMask browser extension, which works best with Telegram Web.**
 
 ### Step 2: Install MetaMask
+
+**Recommended: Browser Extension (for Telegram Web)**
+
+1. **On Desktop (Recommended):**
+   - Install the MetaMask browser extension from [metamask.io](https://metamask.io)
+   - Click "Install MetaMask for [Your Browser]"
+   - Add the extension to your browser
+   - Create a new wallet or import an existing one
+   - **Important:** Save your seed phrase securely!
+   - The extension will appear in your browser toolbar
+
+**Alternative: Mobile App (if using mobile Telegram)**
 
 1. **On Mobile:**
    - Download **MetaMask** from the App Store (iOS) or Google Play (Android)
    - Open the app and create a new wallet or import an existing one
    - **Important:** Save your seed phrase securely!
-
-2. **On Desktop:**
-   - Install the MetaMask browser extension from [metamask.io](https://metamask.io)
-   - Create a new wallet or import an existing one
-   - Save your seed phrase securely
+   - **Note:** Mobile may have deeplink issues - if wallet connection fails, try Telegram Web instead
 
 ### Step 3: Add Sepolia Testnet
 
@@ -103,7 +138,6 @@ You'll need Sepolia ETH to pay for gas fees and to wrap into WETH. Here's how to
 Popular Sepolia testnet faucets:
 - **Alchemy Sepolia Faucet:** [sepoliafaucet.com](https://sepoliafaucet.com)
 - **Infura Sepolia Faucet:** [infura.io/faucet/sepolia](https://www.infura.io/faucet/sepolia)
-- **PoW Faucet:** [sepolia-faucet.pk910.de](https://sepolia-faucet.pk910.de)
 - **QuickNode Faucet:** [faucet.quicknode.com/ethereum/sepolia](https://faucet.quicknode.com/ethereum/sepolia)
 
 ### Step 2: Request Test ETH
@@ -143,7 +177,7 @@ The Compound Mini App uses **WETH (Wrapped ETH)** for supply and borrow operatio
 
 1. In the search bar, enter the WETH contract address:
    ```
-   0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9
+   0x2D5ee574e710219a521449679A4A7f2B43f046ad
    ```
 2. Press Enter or tap Search
 3. You'll be taken to the WETH contract page
@@ -182,7 +216,7 @@ The Compound Mini App uses **WETH (Wrapped ETH)** for supply and borrow operatio
 **Alternative:** You can also check your WETH balance in MetaMask:
 1. Open MetaMask
 2. Tap **"Import tokens"** at the bottom
-3. Enter the WETH contract address: `0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9`
+3. Enter the WETH contract address: `0x2D5ee574e710219a521449679A4A7f2B43f046ad`
 4. Tap **"Add Custom Token"**
 5. Your WETH balance will now appear in MetaMask
 
@@ -194,15 +228,20 @@ Now that you have WETH, let's explore the app features!
 
 ### Step 1: Connect Your Wallet
 
-1. In the Compound Mini App (still open in Telegram)
+1. In the Compound Mini App (still open in Telegram Web)
 2. Look at the top right corner - you'll see **"Tour as guest"** and **"Connect Wallet"** buttons
-3. Tap **"Connect Wallet"**
+3. Click **"Connect Wallet"**
 4. A wallet connection modal will appear
 5. Choose your wallet:
-   - **WalletConnect:** Scan QR code with MetaMask mobile app
-   - **Injected:** If using MetaMask browser extension, it will appear automatically
+   - **Injected (Recommended):** If using MetaMask browser extension, it will appear automatically and connect seamlessly
+   - **WalletConnect:** Alternative option - scan QR code with MetaMask mobile app (may have issues on mobile Telegram)
 6. Approve the connection in MetaMask
 7. Select the Sepolia network if prompted
+
+**Tip:** If you're using Telegram Web with MetaMask extension, the connection should be instant and smooth. If you encounter issues, make sure:
+- MetaMask extension is installed and unlocked
+- You're using Telegram Web (not desktop app)
+- Your browser allows pop-ups from Telegram
 
 **Success!** Your wallet is now connected. You'll see your wallet address in the header.
 
@@ -310,16 +349,6 @@ To reduce your debt and improve your health factor:
 
 **Note:** You'll need USDC in your wallet to repay. You can get test USDC from faucets or by borrowing it first.
 
-### Step 8: View Transaction History
-
-1. Tap the **History** icon in the bottom navigation (if available)
-2. Or navigate to the History page
-3. You'll see all your transactions:
-   - Supplies
-   - Withdrawals
-   - Borrows
-   - Repayments
-
 ---
 
 ## 💡 Tips and Best Practices
@@ -379,10 +408,12 @@ To reduce your debt and improve your health factor:
 
 - **Problem:** Wallet connection not working
 - **Solutions:**
+  - **Switch to Telegram Web:** If you're on mobile or desktop app, try Telegram Web instead (web.telegram.org)
   - Make sure MetaMask is unlocked
   - Try refreshing the app
-  - Use WalletConnect if browser extension isn't working
+  - Use the "Injected" wallet option if using browser extension
   - Check that you've approved the connection
+  - **Mobile users:** If deeplink issues occur, switch to Telegram Web for a smoother experience
 
 ### WETH Balance Not Showing
 
@@ -399,17 +430,6 @@ To reduce your debt and improve your health factor:
 - **Compound Protocol Docs:** [docs.compound.finance](https://docs.compound.finance)
 - **Sepolia Testnet Info:** [sepolia.dev](https://sepolia.dev)
 - **MetaMask Guide:** [metamask.io/learn](https://metamask.io/learn)
-
----
-
-## 🆘 Need Help?
-
-If you encounter any issues:
-1. Check this guide's troubleshooting section
-2. Make sure you're on Sepolia testnet
-3. Verify you have sufficient balances
-4. Try refreshing the app
-5. Contact support through the Telegram bot
 
 ---
 
