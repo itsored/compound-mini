@@ -32,17 +32,9 @@ Welcome to **Compound Mini App**! This guide will walk you through everything yo
 
 1. Open **Telegram Web** in your browser (recommended) or the Telegram app
 2. In the search bar, type **`@compoundminiapp`**
-3. Click on the **Compound Mini App** bot
-4. Click **Start** or send `/start` to begin
+3. Click **open** to launch the app
 
-### Step 2: Launch the Mini App
-
-1. Once you've started the bot, you'll see a menu button
-2. Click the **Menu** button (or the app icon if available)
-3. Click **"Open App"** or the app button to launch the Mini App
-4. The app will open in Telegram's built-in browser
-
-**Tip:** If you're using Telegram Web, the app will open in a new browser tab, making it easier to interact with your wallet extension.
+![Finding the Mini App](/userguide/findminiapp.png)
 
 🎉 **Congratulations!** You're now in the Compound Mini App.
 
@@ -72,6 +64,8 @@ You have two options to explore the app:
 - Full functionality with real transactions
 - Supply assets, borrow, and manage positions
 - Requires a wallet with Sepolia testnet ETH
+
+![Guest and Connect Modes](/userguide/guestandconnectmodes.png)
 
 For this guide, we'll connect a wallet to test all features.
 
@@ -238,12 +232,16 @@ Now that you have WETH, let's explore the app features!
 6. Approve the connection in MetaMask
 7. Select the Sepolia network if prompted
 
+![Connect Wallet](/userguide/coonectwallet.png)
+
 **Tip:** If you're using Telegram Web with MetaMask extension, the connection should be instant and smooth. If you encounter issues, make sure:
 - MetaMask extension is installed and unlocked
 - You're using Telegram Web (not desktop app)
 - Your browser allows pop-ups from Telegram
 
 **Success!** Your wallet is now connected. You'll see your wallet address in the header.
+
+![Home Page](/userguide/home.png)
 
 ### Step 2: Explore the Dashboard
 
@@ -254,6 +252,8 @@ Now that you have WETH, let's explore the app features!
    - Current positions
    - Supply and borrow balances
 
+![Dashboard](/userguide/dashboard.png)
+
 ### Step 3: Supply WETH (Earn Interest)
 
 1. Tap the **Supply** icon in the bottom navigation (or from the home page)
@@ -261,6 +261,9 @@ Now that you have WETH, let's explore the app features!
    - Your WETH wallet balance
    - Your current supplied WETH
    - Supply APY (Annual Percentage Yield)
+
+![Supply Page](/userguide/supply.png)
+
 3. Enter the amount of WETH you want to supply:
    - Type the amount in the input field
    - Or tap **"MAX"** to supply all your WETH
@@ -294,6 +297,9 @@ Now that you have collateral (supplied WETH), you can borrow USDC:
    - Current health factor
    - Borrow APY
    - Maximum borrowable amount
+
+![Borrow Page](/userguide/borrow.png)
+
 3. Enter the amount of USDC you want to borrow
 4. Review the borrow preview:
    - Borrow APY
@@ -318,6 +324,9 @@ If you want to withdraw some of your supplied WETH:
    - Your current supplied WETH
    - Available to withdraw
    - Supply APY
+
+![Withdraw Page](/userguide/withdraw.png)
+
 3. Enter the amount you want to withdraw
 4. Review the preview:
    - Interest lost annually
