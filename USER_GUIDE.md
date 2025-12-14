@@ -1,4 +1,10 @@
+<div align="center">
+
+![Compound Logo](public/complogo.png)
+
 # Compound Mini App - User Guide
+
+</div>
 
 Welcome to **Compound Mini App**! This guide will walk you through everything you need to know to get started with lending and borrowing on Compound Protocol directly from Telegram.
 
