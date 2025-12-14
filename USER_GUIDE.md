@@ -1,6 +1,6 @@
 <div align="center">
 
-![Compound Logo](public/complogo.png)
+![Compound Logo](/complogo.png)
 
 # Compound Mini App - User Guide
 
