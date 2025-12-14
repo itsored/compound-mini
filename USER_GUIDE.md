@@ -40,7 +40,7 @@ Welcome to **Compound Mini App**! This guide will walk you through everything yo
 2. In the search bar, type **`@compoundminiapp`**
 3. Click **open** to launch the app
 
-![Finding the Mini App](public/userguide/findminiapp.png)
+![Finding the Mini App](/userguide/findminiapp.png)
 
 🎉 **Congratulations!** You're now in the Compound Mini App.
 
@@ -71,7 +71,7 @@ You have two options to explore the app:
 - Supply assets, borrow, and manage positions
 - Requires a wallet with Sepolia testnet ETH
 
-![Guest and Connect Modes](public/userguide/guestandconnectmodes.png)
+![Guest and Connect Modes](/userguide/guestandconnectmodes.png)
 
 For this guide, we'll connect a wallet to test all features.
 
@@ -238,7 +238,7 @@ Now that you have WETH, let's explore the app features!
 6. Approve the connection in MetaMask
 7. Select the Sepolia network if prompted
 
-![Connect Wallet](public/userguide/coonectwallet.png)
+![Connect Wallet](/userguide/coonectwallet.png)
 
 **Tip:** If you're using Telegram Web with MetaMask extension, the connection should be instant and smooth. If you encounter issues, make sure:
 - MetaMask extension is installed and unlocked
@@ -247,7 +247,7 @@ Now that you have WETH, let's explore the app features!
 
 **Success!** Your wallet is now connected. You'll see your wallet address in the header.
 
-![Home Page](public/userguide/home.png)
+![Home Page](/userguide/home.png)
 
 ### Step 2: Explore the Dashboard
 
@@ -258,7 +258,7 @@ Now that you have WETH, let's explore the app features!
    - Health factor in the next slides (if you have positions)
 
 
-![Dashboard](public/userguide/dashboard.png)
+![Dashboard](/userguide/dashboard.png)
 
 ### Step 3: Supply WETH (Earn Interest)
 
@@ -268,7 +268,7 @@ Now that you have WETH, let's explore the app features!
    - Your current supplied WETH
    - Supply APY (Annual Percentage Yield)
 
-![Supply Page](public/userguide/supply.png)
+![Supply Page](/userguide/supply.png)
 
 3. Enter the amount of WETH you want to supply:
    - Type the amount in the input field
@@ -304,7 +304,7 @@ Now that you have collateral (supplied WETH), you can borrow USDC:
    - Borrow APY
    - Maximum borrowable amount
 
-![Borrow Page](public/userguide/borrow.png)
+![Borrow Page](/userguide/borrow.png)
 
 3. Enter the amount of USDC you want to borrow
 4. Review the borrow preview:
@@ -331,7 +331,7 @@ If you want to withdraw some of your supplied WETH:
    - Available to withdraw
    - Supply APY
 
-![Withdraw Page](public/userguide/withdraw.png)
+![Withdraw Page](/userguide/withdraw.png)
 
 3. Enter the amount you want to withdraw
 4. Review the preview:
@@ -354,7 +354,7 @@ To reduce your debt and improve your health factor:
    - Borrow APY
    - Your USDC wallet balance
 
-![Repay Page](public/userguide/repay.png)
+![Repay Page](/userguide/repay.png)
 
 3. Enter the amount of USDC you want to repay
 4. Review the preview:
