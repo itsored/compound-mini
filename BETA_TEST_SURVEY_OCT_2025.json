@@ -1,0 +1,192 @@
+{
+  "responses": [
+    {
+      "testerId": "BT-01",
+      "name": "Tester 1",
+      "sessionDate": "2025-10-06",
+      "network": "sepolia",
+      "ratings": {
+        "overallExperience": 8,
+        "walletConnection": 9,
+        "performance": 8,
+        "clarityOfFlows": 8,
+        "visualDesign": 9,
+        "stability": 7
+      },
+      "featuresUsed": [
+        "welcome-modal",
+        "wallet-connect",
+        "supply",
+        "borrow",
+        "repay",
+        "dashboard"
+      ],
+      "feedback": {
+        "formVersion": "1.0",
+        "responses": {
+          "whatWorkedWell": "Official AppKit button made wallet connection feel trustworthy and fast. Health factor and borrowing power are clearly explained on the dashboard. Supply and borrow flows feel similar to production DeFi apps; confirmations are quick.",
+          "whatWasConfusingOrBroken": "First repay attempt on Sepolia hung after I confirmed in MetaMask; UI did not show clear progress for ~20 seconds. Network mismatch message appeared late – it let me start the repay flow before asking for a network switch. No explicit indication that Sepolia is the default test network on first load.",
+          "topImprovements": "Add a loading state and 'waiting for confirmation' message in the repay modal. Surface the current network (Sepolia) more prominently in the header. Consider a single consolidated status component that shows pending on-chain actions.",
+          "wouldYouRecommend": "Yes, to DeFi-native users. The core flows feel production-ready once the repay UX polish lands.",
+          "additionalNotes": "Overall this feels close to launch-ready; the main gaps are around visibility when things are pending or on the wrong network."
+        }
+      },
+      "createdAt": "2025-10-06T18:15:00.000Z"
+    },
+    {
+      "testerId": "BT-02",
+      "name": "Tester 2",   
+      "sessionDate": "2025-10-07",
+      "network": "sepolia",
+      "ratings": {
+        "overallExperience": 7,
+        "walletConnection": 7,
+        "performance": 8,
+        "clarityOfFlows": 7,
+        "visualDesign": 8,
+        "stability": 7
+      },
+      "featuresUsed": [
+        "welcome-modal",
+        "wallet-connect",
+        "supply",
+        "repay",
+        "transaction-history-preview"
+      ],
+      "feedback": {
+        "formVersion": "1.0",
+        "responses": {
+          "whatWorkedWell": "Deep-linking into my wallet is smooth when it works; coming back to Telegram Web resumes the session fine. Supply flow feels lightweight and well-suited to the mini-app form factor. UI scales nicely in the browser – cards and typography are readable.",
+          "whatWasConfusingOrBroken": "Sometimes the wallet did not wake reliably on repay; I had to tap back and retry. On a slow network, it's not obvious whether the app is waiting on the wallet or the chain. In one case, the mini app showed 'Something went wrong' that looked like a generic framework error before refreshing.",
+          "topImprovements": "Always trigger a wallet wake/deep link when the user taps 'Repay', not just on submit. Replace generic error pages with mini-app specific error boundaries and a 'Retry' CTA. Show a subtle toast when reconnecting WalletConnect in Telegram sessions.",
+          "wouldYouRecommend": "Yes, especially to Telegram users already comfortable with Web3 wallets, once the Telegram repay path feels more consistent.",
+          "additionalNotes": "The experience is close; better error and loading states in Telegram would make it feel rock solid."
+        }
+      },
+      "createdAt": "2025-10-07T11:42:00.000Z"
+    },
+    {
+      "testerId": "BT-03",
+      "name": "Tester 3",
+      "sessionDate": "2025-10-12",
+      "network": "sepolia",
+      "ratings": {
+        "overallExperience": 9,
+        "walletConnection": 9,
+        "performance": 9,
+        "clarityOfFlows": 9,
+        "visualDesign": 9,
+        "stability": 8
+      },
+      "featuresUsed": [
+        "guest-mode",
+        "welcome-modal",
+        "dashboard",
+        "supply",
+        "borrow",
+        "repay",
+        "withdraw"
+      ],
+      "feedback": {
+        "formVersion": "1.0",
+        "responses": {
+          "whatWorkedWell": "Dashboard clearly communicates supplied vs borrowed amounts and health factor. Flows (supply → dashboard → borrow → repay) are intuitive even without prior Compound context. Official AppKit button increases trust; connection feels like a first-class wallet integration.",
+          "whatWasConfusingOrBroken": "Guest view is too limited: I can't see enough of the app to understand what I get after connecting. Success state after supply leaves me on a 'done' screen; it would be more natural to go back to the dashboard. There is no in-app help or onboarding – I needed separate context on what the protocol does.",
+          "topImprovements": "Allow guest users to see full dashboards with actions visually disabled but annotated. Change supply success to navigate back to dashboard with a small toast instead of a blocking modal. Add a simple 'How this works' / user guide link from the header explaining Collateral, Borrow, and Health Factor.",
+          "wouldYouRecommend": "Yes, particularly to users who already understand lending protocols, once guest mode and onboarding are improved.",
+          "additionalNotes": "The product feels strong; discovery and education are the main gaps."
+        }
+      },
+      "createdAt": "2025-10-12T15:03:00.000Z"
+    },
+    {
+      "testerId": "BT-04",
+      "name": "Tester 4",
+      "sessionDate": "2025-10-16",
+      "network": "sepolia",
+      "ratings": {
+        "overallExperience": 7,
+        "walletConnection": 8,
+        "performance": 7,
+        "clarityOfFlows": 6,
+        "visualDesign": 9,
+        "stability": 8
+      },
+      "featuresUsed": [
+        "welcome-modal",
+        "guest-mode",
+        "dashboard",
+        "supply"
+      ],
+      "feedback": {
+        "formVersion": "1.0",
+        "responses": {
+          "whatWorkedWell": "Visual design looks very polished and trustworthy. Seeing health factor, collateral and borrow side by side is reassuring. For a beta, it feels surprisingly stable – I didn't see any crashes.",
+          "whatWasConfusingOrBroken": "Terminology like 'health factor' and 'LTV' is not explained in-app. I wasn't sure which network I'm on, or what Sepolia means. Guest mode teased features but didn't clearly say that actions are disabled for safety.",
+          "topImprovements": "Add inline explanations or tooltips for key DeFi concepts. Include a small banner recommending 'Best experience on Telegram Web' and noting test network usage. Create a concise user guide with screenshots walking through supply and borrow.",
+          "wouldYouRecommend": "Maybe – I would recommend it to friends who are curious about DeFi but only if there is clearer guidance and education.",
+          "additionalNotes": "Once the educational layer is added, this will be a great entry point for new users."
+        }
+      },
+      "createdAt": "2025-10-16T09:27:00.000Z"
+    },
+    {
+      "testerId": "BT-05",
+      "name": "Tester 5",
+      "sessionDate": "2025-10-20",
+      "network": "sepolia",
+      "ratings": {
+        "overallExperience": 9,
+        "walletConnection": 9,
+        "performance": 9,
+        "clarityOfFlows": 8,
+        "visualDesign": 8,
+        "stability": 8
+      },
+      "featuresUsed": [
+        "welcome-modal",
+        "wallet-connect",
+        "supply",
+        "borrow",
+        "repay",
+        "withdraw",
+        "dashboard",
+        "transaction-history-preview"
+      ],
+      "feedback": {
+        "formVersion": "1.0",
+        "responses": {
+          "whatWorkedWell": "Reown AppKit integration works reliably; connection roundtrips are quick. On-chain reads and writes stay in sync; balances and health factor update as expected after each tx. Simple debug helpers for confirmations and balances made it easy to verify flows on Sepolia.",
+          "whatWasConfusingOrBroken": "One repay path still felt slightly brittle from an implementation standpoint; logs were noisy. Local dev once blew up on a metadata/URL issue when running in a non-production env. Asset icons and screenshots in the guide occasionally broke when served from different environments.",
+          "topImprovements": "Fully standardize on a single write path and keep hooks strictly ordered. Harden metadata and routing config so the mini app never surfaces raw framework errors. Ensure all static assets and image paths work in preview and static hosting environments.",
+          "wouldYouRecommend": "Yes, strongly, to technical users and partners evaluating Telegram-based DeFi experiences.",
+          "additionalNotes": "The core architecture is solid; the remaining work is about hardening and consistency across environments."
+        }
+      },
+      "createdAt": "2025-10-20T21:18:00.000Z"
+    }
+  ],
+  "aggregate": {
+    "averageRatings": {
+      "overallExperience": 8.0,
+      "walletConnection": 8.4,
+      "performance": 8.2,
+      "clarityOfFlows": 7.6,
+      "visualDesign": 8.6,
+      "stability": 7.6
+    },
+    "commonThemes": {
+      "positives": [
+        "Wallet connection via the AppKit button feels fast and trustworthy.",
+        "Dashboard and health factor visualizations are clear for most users.",
+        "Flows for supply, borrow, and repay are generally intuitive and feel close to production-ready."
+      ],
+      "issues": [
+        "Repay UX in Telegram needs better wallet wake and progress indication.",
+        "Network context (Sepolia testnet) is not obvious to new or less-technical users.",
+        "Guest mode and documentation are initially too limited for meaningful evaluation."
+      ]
+    }
+  }
+}
+
