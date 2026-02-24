@@ -5,8 +5,8 @@ A **Telegram Mini App** for decentralized lending and borrowing, integrating wit
 ## 🎯 What is This?
 
 This is a **Telegram Mini App** (not a traditional web application) that allows users to:
-- Supply WETH assets to earn interest
-- Borrow USDC against supplied collateral
+- Supply the selected collateral asset to earn interest
+- Borrow the selected market base token against supplied collateral
 - Monitor portfolio health and positions
 - Manage DeFi positions directly from Telegram
 
@@ -14,12 +14,12 @@ The app is designed to run inside Telegram's WebApp environment, providing a nat
 
 ## ✨ Features
 
-- 🏦 **Supply Assets**: Deposit WETH to earn interest on Compound Protocol
-- 💰 **Borrow Assets**: Borrow USDC against your supplied WETH collateral
+- 🏦 **Supply Assets**: Deposit the selected collateral token into Compound Protocol
+- 💰 **Borrow Assets**: Borrow the selected base token against supplied collateral
 - 📊 **Portfolio Analytics**: Real-time tracking of lending positions and health factor
 - 🔄 **Live Rates**: Dynamic interest rates and market data from Compound
 - 🎯 **Health Factor Monitoring**: Automated risk management and position tracking
-- 🌐 **Multi-Network Support**: Local mainnet fork (development) and Sepolia testnet (production)
+- 🌐 **Multichain Support**: Mainnet chains + Sepolia testnet + local mainnet fork
 - 📱 **Telegram Native**: Optimized for Telegram's WebApp environment with native UI integration
 - 🔐 **Wallet Integration**: Seamless wallet connection via WalletConnect and injected wallets
 - 👤 **Guest Mode**: Explore the app without connecting a wallet
@@ -31,7 +31,7 @@ The app is designed to run inside Telegram's WebApp environment, providing a nat
 - **Git**
 - **Telegram Bot Token** (for testing as a miniapp)
 - **Alchemy or Infura API Key** (for blockchain RPC access)
-- **WalletConnect Project ID** (for wallet connections)
+- **Reown AppKit Project ID** (for wallet connections)
 
 ## 🚀 Quick Start
 
@@ -59,49 +59,73 @@ cd ..
 Create a `.env.local` file in the root directory:
 
 ```bash
-# Network configuration (choose one)
-NEXT_PUBLIC_NETWORK=sepolia  # or 'local' for mainnet fork
+# Default selection
+NEXT_PUBLIC_DEFAULT_CHAIN=mainnet
+NEXT_PUBLIC_DEFAULT_MARKET=usdc
 
-# RPC Provider (for Sepolia testnet)
-NEXT_PUBLIC_INFURA_KEY=your_infura_project_id
-# OR
-NEXT_PUBLIC_ALCHEMY_KEY=your_alchemy_api_key
+# Reown AppKit Project ID (required)
+NEXT_PUBLIC_REOWN_PROJECT_ID=your_reown_project_id
 
-# WalletConnect Project ID (required for wallet connections)
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
+# RPC URLs (set the chains you plan to use)
+NEXT_PUBLIC_MAINNET_RPC_URL=https://ethereum.publicnode.com
+NEXT_PUBLIC_ARBITRUM_RPC_URL=https://arbitrum-one-rpc.publicnode.com
+NEXT_PUBLIC_BASE_RPC_URL=https://base-rpc.publicnode.com
+NEXT_PUBLIC_OPTIMISM_RPC_URL=https://optimism-rpc.publicnode.com
+NEXT_PUBLIC_POLYGON_RPC_URL=https://polygon-bor-rpc.publicnode.com
+NEXT_PUBLIC_SCROLL_RPC_URL=https://rpc.scroll.io
+NEXT_PUBLIC_LINEA_RPC_URL=https://rpc.linea.build
+NEXT_PUBLIC_UNICHAIN_RPC_URL=https://mainnet.unichain.org
+NEXT_PUBLIC_RONIN_RPC_URL=https://api.roninchain.com/rpc
+NEXT_PUBLIC_MANTLE_RPC_URL=https://rpc.mantle.xyz
 
-# Optional: Custom Sepolia RPC URL
-NEXT_PUBLIC_SEPOLIA_RPC_URL=https://sepolia.publicnode.com
+# Only retained testnet
+NEXT_PUBLIC_SEPOLIA_RPC_URL=https://ethereum-sepolia.publicnode.com
 ```
 
-**Get your WalletConnect Project ID:**
+**Get your Reown Project ID:**
 1. Visit [cloud.reown.com](https://cloud.reown.com)
 2. Create a new project
 3. Copy your Project ID
 
 ### 4. Network Configuration
 
-The app supports two network modes:
+The app supports:
+- Mainnet chains (mainnet, arbitrum, base, optimism, polygon, scroll, linea, unichain, ronin, mantle)
+- Sepolia as the only testnet
+- Local mainnet fork for development
 
-#### Option A: Sepolia Testnet (Recommended for Telegram Testing)
+#### Option A: Mainnet chain (example: Base)
 
 ```bash
-# Set network to Sepolia testnet
-echo 'NEXT_PUBLIC_NETWORK=sepolia' > .env.local
-
-# Add RPC provider (choose one)
-echo 'NEXT_PUBLIC_INFURA_KEY=your_infura_project_id' >> .env.local
-# OR
-echo 'NEXT_PUBLIC_ALCHEMY_KEY=your_alchemy_api_key' >> .env.local
+cat > .env.local <<'EOF'
+NEXT_PUBLIC_DEFAULT_CHAIN=base
+NEXT_PUBLIC_DEFAULT_MARKET=usdc
+NEXT_PUBLIC_BASE_RPC_URL=https://base-rpc.publicnode.com
+NEXT_PUBLIC_REOWN_PROJECT_ID=your_reown_project_id
+EOF
 ```
 
-#### Option B: Local Mainnet Fork (Development Only)
+#### Option B: Sepolia Testnet (only testnet path)
+
+```bash
+cat > .env.local <<'EOF'
+NEXT_PUBLIC_DEFAULT_CHAIN=sepolia
+NEXT_PUBLIC_DEFAULT_MARKET=usdc
+NEXT_PUBLIC_SEPOLIA_RPC_URL=https://ethereum-sepolia.publicnode.com
+NEXT_PUBLIC_REOWN_PROJECT_ID=your_reown_project_id
+EOF
+```
+
+#### Option C: Local Mainnet Fork (Development Only)
 
 For local development with a mainnet fork:
 
 ```bash
-# Set network to local mainnet fork
-echo 'NEXT_PUBLIC_NETWORK=local' > .env.local
+cat > .env.local <<'EOF'
+NEXT_PUBLIC_DEFAULT_CHAIN=local
+NEXT_PUBLIC_DEFAULT_MARKET=mainnet-usdc-fork
+NEXT_PUBLIC_REOWN_PROJECT_ID=your_reown_project_id
+EOF
 
 # Configure mainnet fork (in onchain directory)
 cd onchain
@@ -121,6 +145,10 @@ npm run switch:local
 # Switch to Sepolia testnet  
 npm run switch:sepolia
 
+# Switch to any chain (optional market override)
+node scripts/switch-network.js base usdc
+node scripts/switch-network.js ronin wron
+
 # Test Sepolia connection
 npm run test:sepolia
 ```
@@ -129,6 +157,12 @@ npm run test:sepolia
 
 ```bash
 npm run dev
+```
+
+If you ever see a blank app due stale local Next processes/cache:
+
+```bash
+npm run dev:reset
 ```
 
 The app will be available at [http://localhost:3000](http://localhost:3000)
@@ -426,9 +460,11 @@ compound-mini/
 1. **Push your changes** to GitHub
 2. **Connect your GitHub repository** to Vercel
 3. **Configure environment variables** in Vercel dashboard:
-   - `NEXT_PUBLIC_NETWORK`
-   - `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
-   - `NEXT_PUBLIC_INFURA_KEY` or `NEXT_PUBLIC_ALCHEMY_KEY`
+   - `NEXT_PUBLIC_DEFAULT_CHAIN`
+   - `NEXT_PUBLIC_DEFAULT_MARKET`
+   - `NEXT_PUBLIC_REOWN_PROJECT_ID`
+   - Chain RPC vars for enabled networks (for example `NEXT_PUBLIC_MAINNET_RPC_URL`, `NEXT_PUBLIC_BASE_RPC_URL`)
+   - `NEXT_PUBLIC_SEPOLIA_RPC_URL` only if using Sepolia
 4. **Deploy** from the main branch
 5. **Update Telegram Bot**: Set the Web App URL in BotFather to your Vercel URL
 
@@ -448,7 +484,7 @@ npm run start
 
 - **Never commit** `.env.local` or `.env` files to version control
 - **Use environment variables** for all sensitive keys and API tokens
-- **WalletConnect Project ID** should be kept secure
+- **Reown AppKit Project ID** should be kept secure
 - **RPC API keys** should have rate limits and access restrictions
 - **Telegram Bot Token** should never be exposed in client-side code
 

@@ -6,9 +6,17 @@ import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, Shield, TrendingDown, RefreshCw, Loader2 } from "lucide-react"
 import { useAccount } from "wagmi"
 import { useGuestMode } from "@/lib/guest-mode"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS, CHAINLINK_ETH_USD_FEED } from "@/lib/comet-onchain"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  CHAINLINK_ETH_USD_FEED,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 import cometAbi from "@/lib/abis/comet.json"
-import erc20Abi from "@/lib/abis/erc20.json"
 
 // Chainlink ETH/USD Price Feed
 const CHAINLINK_PRICE_FEED_ABI = [
@@ -34,7 +42,7 @@ interface HealthData {
   collateralRatio: number
   liquidationThreshold: number
   liquidationRisk: 'safe' | 'warning' | 'danger'
-  wethPrice: number
+  collateralPrice: number
   priceUpdatedAt: number
 }
 
@@ -60,7 +68,7 @@ export function HealthFactorMonitor() {
         collateralRatio: 0,
         liquidationThreshold: 0,
         liquidationRisk: 'safe',
-        wethPrice: 0,
+        collateralPrice: 0,
         priceUpdatedAt: Date.now()
       })
       setLoading(false)
@@ -74,7 +82,7 @@ export function HealthFactorMonitor() {
     try {
       console.log("🏥 Fetching health data for:", address)
       
-      // Get user positions and real WETH price from Chainlink
+      // Get user positions and collateral price from Chainlink.
       const [borrowBalance, collateralBalance, priceData] = await Promise.all([
         publicClient.readContract({
           address: COMET_ADDRESS,
@@ -88,7 +96,7 @@ export function HealthFactorMonitor() {
           functionName: "collateralBalanceOf",
           args: [address, WETH_ADDRESS]
         }) as Promise<bigint>,
-        // Get real WETH price from Chainlink
+        // Get collateral price from Chainlink-compatible feed.
         publicClient.readContract({
           address: CHAINLINK_ETH_USD_FEED,
           abi: CHAINLINK_PRICE_FEED_ABI,
@@ -99,23 +107,22 @@ export function HealthFactorMonitor() {
 
       // Extract price data from Chainlink
       const [, price, , updatedAt] = priceData
-      const wethPriceUsd = Number(price) / 1e8 // Chainlink prices have 8 decimals
+      const collateralPriceUsd = Number(price) / 1e8 // Chainlink prices have 8 decimals
 
       console.log("📊 Raw health data:", {
         borrowBalance: borrowBalance.toString(),
         collateralBalance: collateralBalance.toString(),
-        wethPriceUsd: wethPriceUsd,
+        collateralPriceUsd,
         priceUpdatedAt: new Date(Number(updatedAt) * 1000).toISOString()
       })
 
       // Convert to readable numbers
-      const borrowValue = Number(borrowBalance) / 1e6 // USDC has 6 decimals
-      const collateralAmount = Number(collateralBalance) / 1e18 // WETH has 18 decimals
-      const collateralValue = collateralAmount * wethPriceUsd // Convert WETH to USDC value using real price
+      const borrowValue = toBaseUnits(borrowBalance)
+      const collateralAmount = toCollateralUnits(collateralBalance)
+      const collateralValue = collateralAmount * collateralPriceUsd
 
       // Calculate health factor
-      // Health Factor = (Collateral Value * Liquidation Factor) / Borrow Value
-      // Using Compound's typical liquidation factor of 0.85 for WETH
+      // Health Factor = (Collateral Value * Liquidation Factor) / Borrow Value.
       const liquidationFactor = 0.85
       const liquidationThreshold = collateralValue * liquidationFactor
       const healthFactor = borrowValue > 0 ? liquidationThreshold / borrowValue : 999
@@ -136,7 +143,7 @@ export function HealthFactorMonitor() {
         collateralRatio,
         liquidationThreshold,
         liquidationRisk,
-        wethPrice: wethPriceUsd,
+        collateralPrice: collateralPriceUsd,
         priceUpdatedAt: Number(updatedAt) * 1000
       }
 
@@ -205,7 +212,7 @@ export function HealthFactorMonitor() {
           <div>
             <CardTitle className="text-lg">Health Factor</CardTitle>
             <CardDescription className="text-text-tertiary">
-              WETH collateral safety monitoring
+              {COLLATERAL_SYMBOL} collateral safety monitoring
             </CardDescription>
           </div>
           {!guest && isConnected && (
@@ -289,14 +296,14 @@ export function HealthFactorMonitor() {
                   <div className="text-lg font-semibold text-compound-success-400">
                     ${healthData.collateralValue.toFixed(2)}
                   </div>
-                  <div className="text-xs text-text-tertiary">WETH Collateral Value</div>
+                  <div className="text-xs text-text-tertiary">{COLLATERAL_SYMBOL} Collateral Value</div>
                 </div>
                 
                 <div className="text-center">
                   <div className="text-lg font-semibold text-compound-error-400">
                     ${healthData.borrowValue.toFixed(2)}
                   </div>
-                  <div className="text-xs text-text-tertiary">USDC Borrowed</div>
+                  <div className="text-xs text-text-tertiary">{BASE_TOKEN_SYMBOL} Borrowed</div>
                 </div>
               </div>
 
@@ -316,7 +323,7 @@ export function HealthFactorMonitor() {
             <div className="bg-bg-tertiary p-3 rounded-lg">
               <div className="text-xs text-text-tertiary text-center">
                 Health factor updates when you refresh<br/>
-                WETH price: ${healthData.wethPrice.toFixed(2)} (Chainlink)<br/>
+                {COLLATERAL_SYMBOL} price: ${healthData.collateralPrice.toFixed(2)} (Chainlink)<br/>
                 Updated: {new Date(healthData.priceUpdatedAt).toLocaleTimeString()}
               </div>
             </div>

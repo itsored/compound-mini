@@ -6,7 +6,16 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Wallet, TrendingUp, Shield, DollarSign } from "lucide-react"
 import { useState, useEffect } from "react"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  USDC_ADDRESS,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 import Image from "next/image"
@@ -15,8 +24,9 @@ interface UserPosition {
   netWorth: number
   healthFactor: number
   hasPosition: boolean
-  wethBalance: number
-  usdcBalance: number
+  collateralBalance: number
+  baseBalance: number
+  collateralSupplied: number
   collateralValue: number
   borrowValue: number
 }
@@ -64,24 +74,25 @@ export function HeroSection() {
         }) as Promise<bigint>
       ])
 
-      const wethBal = Number(wethBalance) / 1e18
-      const usdcBal = Number(usdcBalance) / 1e6
-      const collateralBal = Number(collateralBalance) / 1e18
-      const borrowBal = Number(borrowBalance) / 1e6
+      const collateralWalletBalance = toCollateralUnits(wethBalance)
+      const baseWalletBalance = toBaseUnits(usdcBalance)
+      const collateralSupplied = toCollateralUnits(collateralBalance)
+      const borrowBal = toBaseUnits(borrowBalance)
 
-      // Simple calculation - in real app, you'd get WETH price from Chainlink
-      const wethPrice = 3000 // Placeholder price
-      const collateralValue = collateralBal * wethPrice
-      const netWorth = (wethBal + collateralBal) * wethPrice + usdcBal - borrowBal
+      // Simple calculation - in real app, you'd get collateral price from Chainlink
+      const collateralPrice = 3000 // Placeholder price
+      const collateralValue = collateralSupplied * collateralPrice
+      const netWorth = (collateralWalletBalance + collateralSupplied) * collateralPrice + baseWalletBalance - borrowBal
       const healthFactor = borrowBal > 0 ? (collateralValue * 0.85) / borrowBal : 999
-      const hasPosition = collateralBal > 0 || borrowBal > 0
+      const hasPosition = collateralSupplied > 0 || borrowBal > 0
 
       setUserPosition({
         netWorth,
         healthFactor,
         hasPosition,
-        wethBalance: wethBal,
-        usdcBalance: usdcBal,
+        collateralBalance: collateralWalletBalance,
+        baseBalance: baseWalletBalance,
+        collateralSupplied,
         collateralValue,
         borrowValue: borrowBal
       })
@@ -116,7 +127,7 @@ export function HeroSection() {
 
     if (!userPosition?.hasPosition) {
       return {
-        title: "Supply WETH",
+        title: `Supply ${COLLATERAL_SYMBOL}`,
         subtitle: "Deposit collateral to start earning",
         icon: <TrendingUp className="h-6 w-6" />,
         action: () => window.location.href = "/supply"
@@ -231,27 +242,27 @@ export function HeroSection() {
                   <div className="flex items-center gap-2">
                     <Image 
                       src="/weth-icon.png" 
-                      alt="WETH" 
+                      alt={COLLATERAL_SYMBOL} 
                       width={20} 
                       height={20} 
                       className="rounded-full"
                     />
-                    <span className="text-sm">WETH</span>
+                    <span className="text-sm">{COLLATERAL_SYMBOL}</span>
                   </div>
-                  <span className="font-semibold">{userPosition.wethBalance.toFixed(4)}</span>
+                  <span className="font-semibold">{userPosition.collateralBalance.toFixed(4)}</span>
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center gap-2">
                     <Image 
                       src="/usdc-icon.webp" 
-                      alt="USDC" 
+                      alt={BASE_TOKEN_SYMBOL} 
                       width={20} 
                       height={20} 
                       className="rounded-full"
                     />
-                    <span className="text-sm">USDC</span>
+                    <span className="text-sm">{BASE_TOKEN_SYMBOL}</span>
                   </div>
-                  <span className="font-semibold">{userPosition.usdcBalance.toFixed(2)}</span>
+                  <span className="font-semibold">{userPosition.baseBalance.toFixed(2)}</span>
                 </div>
               </div>
 

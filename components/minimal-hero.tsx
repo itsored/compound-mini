@@ -6,7 +6,16 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Wallet, TrendingUp, Shield, ArrowRight } from "lucide-react"
 import { useState, useEffect } from "react"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  USDC_ADDRESS,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 import Image from "next/image"
@@ -77,10 +86,10 @@ export function MinimalHero() {
         }) as Promise<bigint>
       ])
 
-      const wethBal = Number(wethBalance) / 1e18
-      const usdcBal = Number(usdcBalance) / 1e6
-      const collateralBal = Number(collateralBalance) / 1e18
-      const borrowBal = Number(borrowBalance) / 1e6
+      const wethBal = toCollateralUnits(wethBalance)
+      const usdcBal = toBaseUnits(usdcBalance)
+      const collateralBal = toCollateralUnits(collateralBalance)
+      const borrowBal = toBaseUnits(borrowBalance)
 
       const wethPrice = 3000 // Placeholder
       const collateralValue = collateralBal * wethPrice
@@ -93,7 +102,7 @@ export function MinimalHero() {
       if (!hasPosition && wethBal > 0) {
         primaryAction = {
           title: "Start Earning",
-          subtitle: "Supply WETH to earn interest",
+          subtitle: `Supply ${COLLATERAL_SYMBOL} to earn interest`,
           action: () => window.location.href = "/supply"
         }
       } else if (healthFactor < 1.5) {

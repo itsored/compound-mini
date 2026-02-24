@@ -9,9 +9,9 @@ interface TemplateProps {
 
 const pageVariants = {
   initial: {
-    opacity: 0,
-    y: 20,
-    scale: 0.98,
+    opacity: 1,
+    y: 0,
+    scale: 1,
   },
   in: {
     opacity: 1,
@@ -34,7 +34,7 @@ const pageTransition = {
 export default function Template({ children }: TemplateProps) {
   return (
     <motion.div
-      initial="initial"
+      initial={false}
       animate="in"
       exit="out"
       variants={pageVariants}

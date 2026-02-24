@@ -8,6 +8,7 @@ import { AppWagmiProvider } from "@/lib/wagmi-provider"
 import { GuestModeProvider } from "@/lib/guest-mode"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ErrorSuppressionScript } from "@/components/error-suppression-script"
+import { ActiveSelectionProvider } from "@/lib/active-selection-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -62,7 +63,7 @@ export default function RootLayout({
             <GuestModeProvider>
               <TelegramProvider>
                 <FeedbackProvider>
-                  {children}
+                  <ActiveSelectionProvider>{children}</ActiveSelectionProvider>
                   <Toaster />
                 </FeedbackProvider>
               </TelegramProvider>

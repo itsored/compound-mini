@@ -8,7 +8,16 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { TrendingUp, TrendingDown, Shield, AlertTriangle, DollarSign, PieChart } from "lucide-react"
 import { formatUnits } from "viem"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, CHAINLINK_ETH_USD_FEED } from "@/lib/comet-onchain"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  CHAINLINK_ETH_USD_FEED,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 import cometAbi from "@/onchain/abis/CometInterface.json"
 
 const CHAINLINK_PRICE_FEED_ABI = [
@@ -88,7 +97,7 @@ export function PortfolioAnalytics() {
 
       console.log("🔍 Fetching portfolio data for:", address)
 
-      // Fetch WETH price from Chainlink
+      // Fetch collateral price from Chainlink
       const priceData = await publicClient.readContract({
         address: CHAINLINK_ETH_USD_FEED,
         abi: CHAINLINK_PRICE_FEED_ABI,
@@ -96,7 +105,7 @@ export function PortfolioAnalytics() {
       }) as [bigint, bigint, bigint, bigint, bigint]
 
       const wethPrice = Number(formatUnits(priceData[1], 8))
-      console.log("💰 WETH Price:", wethPrice)
+      console.log("💰 Collateral Price:", wethPrice)
 
       // Fetch portfolio positions
       const [
@@ -146,16 +155,16 @@ export function PortfolioAnalytics() {
       ])
 
       console.log("📊 Raw Portfolio Data:", {
-        wethCollateralBalance: formatUnits(wethCollateralBalance, 18),
-        usdcBorrowBalance: formatUnits(usdcBorrowBalance, 6),
-        usdcSupplyBalance: formatUnits(usdcSupplyBalance, 6),
+        collateralBalance: toCollateralUnits(wethCollateralBalance),
+        borrowBalance: toBaseUnits(usdcBorrowBalance),
+        supplyBalance: toBaseUnits(usdcSupplyBalance),
         assetInfo
       })
 
       // Convert to readable amounts
-      const wethCollateralAmount = Number(formatUnits(wethCollateralBalance, 18))
-      const usdcBorrowedAmount = Number(formatUnits(usdcBorrowBalance, 6))
-      const usdcSuppliedAmount = Number(formatUnits(usdcSupplyBalance, 6))
+      const wethCollateralAmount = toCollateralUnits(wethCollateralBalance)
+      const usdcBorrowedAmount = toBaseUnits(usdcBorrowBalance)
+      const usdcSuppliedAmount = toBaseUnits(usdcSupplyBalance)
       
       // Extract factors from asset info
       const borrowCollateralFactorRaw = assetInfo?.borrowCollateralFactor ?? BigInt("800000000000000000")
@@ -178,8 +187,8 @@ export function PortfolioAnalytics() {
         ? totalCollateralValue / totalBorrowedValue 
         : 0
 
-      const utilizationRate = totalSupply > 0 
-        ? Number(formatUnits(totalBorrowed, 6)) / Number(formatUnits(totalSupply, 6))
+      const utilizationRate = totalSupply > BigInt(0)
+        ? toBaseUnits(totalBorrowed) / toBaseUnits(totalSupply)
         : 0
 
       // Calculate liquidation price
@@ -370,7 +379,7 @@ export function PortfolioAnalytics() {
               Connect your wallet and create a position to view detailed analytics
             </p>
             <div className="text-sm text-slate-500 dark:text-slate-400">
-              Start by supplying WETH as collateral and borrowing USDC
+              Start by supplying {COLLATERAL_SYMBOL} as collateral and borrowing {BASE_TOKEN_SYMBOL}
             </div>
           </div>
         </CardContent>
@@ -453,14 +462,14 @@ export function PortfolioAnalytics() {
               </div>
               <div>
                 <h3 className="text-sm font-medium text-text-primary">Collateral</h3>
-                <p className="text-xs text-text-secondary">WETH value</p>
+                <p className="text-xs text-text-secondary">{COLLATERAL_SYMBOL} value</p>
               </div>
             </div>
             <div className="space-y-1">
               <p className="text-2xl font-semibold text-text-primary">${portfolioData.totalCollateralValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
               <div className="flex items-center justify-between text-xs">
-                <p className="text-text-secondary whitespace-normal break-words">{portfolioData.wethCollateralAmount.toFixed(4)} WETH</p>
-                <p className="text-text-tertiary whitespace-normal break-words">${portfolioData.wethPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}/WETH</p>
+                <p className="text-text-secondary whitespace-normal break-words">{portfolioData.wethCollateralAmount.toFixed(4)} {COLLATERAL_SYMBOL}</p>
+                <p className="text-text-tertiary whitespace-normal break-words">${portfolioData.wethPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}/{COLLATERAL_SYMBOL}</p>
               </div>
             </div>
           </div>
@@ -472,13 +481,13 @@ export function PortfolioAnalytics() {
               </div>
               <div>
                 <h3 className="text-sm font-medium text-text-primary">Borrowed</h3>
-                <p className="text-xs text-text-secondary">USDC debt</p>
+                <p className="text-xs text-text-secondary">{BASE_TOKEN_SYMBOL} debt</p>
               </div>
             </div>
             <div className="space-y-1">
               <p className="text-2xl font-semibold text-text-primary">${portfolioData.totalBorrowedValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
               <div className="flex items-center justify-between text-xs">
-                <p className="text-text-secondary whitespace-normal break-words">{portfolioData.usdcBorrowedAmount.toFixed(2)} USDC</p>
+                <p className="text-text-secondary whitespace-normal break-words">{portfolioData.usdcBorrowedAmount.toFixed(2)} {BASE_TOKEN_SYMBOL}</p>
                 <span className="text-text-tertiary" />
               </div>
             </div>
@@ -550,7 +559,7 @@ export function PortfolioAnalytics() {
             </div>
             <div className="flex items-end justify-between">
               <p className="text-2xl font-semibold text-text-primary">${portfolioData.liquidationPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-              <p className="text-xs text-text-secondary text-right">WETH ${portfolioData.wethPrice.toFixed(2)}</p>
+              <p className="text-xs text-text-secondary text-right">{COLLATERAL_SYMBOL} ${portfolioData.wethPrice.toFixed(2)}</p>
             </div>
           </div>
 
@@ -603,7 +612,7 @@ export function PortfolioAnalytics() {
                 <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-text-primary">USDC Supply</h3>
+                <h3 className="text-sm font-medium text-text-primary">{BASE_TOKEN_SYMBOL} Supply</h3>
                 <p className="text-xs text-text-secondary">Earning yield</p>
               </div>
             </div>

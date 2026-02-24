@@ -7,15 +7,13 @@ import {
   TrendingUp, 
   TrendingDown, 
   Activity, 
-  DollarSign, 
   RefreshCw, 
   Loader2, 
   BarChart3,
-  Users,
   AlertCircle,
   Info
 } from "lucide-react"
-import { publicClient, COMET_ADDRESS } from "@/lib/comet-onchain"
+import { publicClient, COMET_ADDRESS, BASE_TOKEN_SYMBOL, toBaseUnits } from "@/lib/comet-onchain"
 import cometAbi from "@/onchain/abis/CometInterface.json"
 
 interface MarketData {
@@ -46,7 +44,7 @@ export function MarketInsightsPanel() {
     setError(null)
 
     try {
-      console.log("📊 Fetching USDC market insights from:", COMET_ADDRESS)
+      console.log(`📊 Fetching ${BASE_TOKEN_SYMBOL} market insights from:`, COMET_ADDRESS)
       
       // Get market data using correct Compound Comet v3 functions
       const [
@@ -119,15 +117,15 @@ export function MarketInsightsPanel() {
         totalAssets: totalAssets.toString()
       })
 
-      // Convert to readable numbers (USDC has 6 decimals)
+      // Convert to readable token amounts.
       const processedData: MarketData = {
-        totalSupply: Number(totalSupply) / 1e6,
-        totalBorrowed: Number(totalBorrowed) / 1e6,
+        totalSupply: toBaseUnits(totalSupply),
+        totalBorrowed: toBaseUnits(totalBorrowed),
         utilization: Number(utilization) / 1e18 * 100, // Convert to percentage
         supplyRate: Number(supplyRate) / 1e18 * 100 * 365 * 24 * 3600, // Convert to annual percentage
         borrowRate: Number(borrowRate) / 1e18 * 100 * 365 * 24 * 3600, // Convert to annual percentage
-        reserveBalance: Number(reserveBalance) / 1e6,
-        totalAssets: Number(totalAssets) / 1e6,
+        reserveBalance: toBaseUnits(reserveBalance),
+        totalAssets: toBaseUnits(totalAssets),
         lastUpdated: Date.now()
       }
 
@@ -182,7 +180,7 @@ export function MarketInsightsPanel() {
           </button>
         </div>
         <CardDescription className="text-text-tertiary text-sm">
-          USDC Market Overview • Compound Comet v3
+          {BASE_TOKEN_SYMBOL} Market Overview • Compound Comet v3
         </CardDescription>
       </CardHeader>
       
@@ -208,7 +206,7 @@ export function MarketInsightsPanel() {
             {/* Market Overview - Mobile Optimized */}
             <div className="bg-bg-tertiary p-4 rounded-lg">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-compound-primary-400">USDC Market</span>
+                <span className="text-sm font-semibold text-compound-primary-400">{BASE_TOKEN_SYMBOL} Market</span>
                 <Badge 
                   variant={getUtilizationBadge(marketData.utilization).color as any}
                   className="text-xs"
@@ -240,13 +238,13 @@ export function MarketInsightsPanel() {
               <div className="grid grid-cols-2 gap-3 text-center">
                 <div className="bg-bg-secondary p-2 rounded">
                   <div className="text-lg font-semibold text-green-400">
-                    ${(marketData.totalSupply / 1e6).toFixed(1)}M
+                    ${(marketData.totalSupply / 1_000_000).toFixed(1)}M
                   </div>
                   <div className="text-xs text-text-tertiary">Total Supply</div>
                 </div>
                 <div className="bg-bg-secondary p-2 rounded">
                   <div className="text-lg font-semibold text-red-400">
-                    ${(marketData.totalBorrowed / 1e6).toFixed(1)}M
+                    ${(marketData.totalBorrowed / 1_000_000).toFixed(1)}M
                   </div>
                   <div className="text-xs text-text-tertiary">Total Borrowed</div>
                 </div>
@@ -287,13 +285,13 @@ export function MarketInsightsPanel() {
                 <div className="flex justify-between">
                   <span className="text-text-tertiary">Available Reserves</span>
                   <span className="text-white">
-                    ${(marketData.reserveBalance / 1e6).toFixed(2)}M
+                    ${(marketData.reserveBalance / 1_000_000).toFixed(2)}M
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-tertiary">Total Assets</span>
                   <span className="text-white">
-                    ${(marketData.totalAssets / 1e6).toFixed(2)}M
+                    ${(marketData.totalAssets / 1_000_000).toFixed(2)}M
                   </span>
                 </div>
                 <div className="flex justify-between">

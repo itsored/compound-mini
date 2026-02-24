@@ -12,8 +12,15 @@ import { useFeedback } from "@/lib/feedback-provider"
 import cometAbi from "@/lib/abis/comet.json"
 import { useAccount, useWriteContract } from "wagmi"
 import { useGuestMode } from "@/lib/guest-mode"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS } from "@/lib/comet-onchain"
-import { parseUnits } from "viem"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  COLLATERAL_SYMBOL,
+  parseCollateralAmount,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 
 export function WithdrawForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
@@ -30,8 +37,7 @@ export function WithdrawForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [withdrawSuccess, setWithdrawSuccess] = useState(false)
 
-  const WETH_DECIMALS = 18
-  const WETH_PRICE_USD = 3000 // Placeholder for WETH price
+  const COLLATERAL_PRICE_USD = 3000 // Placeholder for collateral price
 
   useEffect(() => {
     setMounted(true)
@@ -74,10 +80,10 @@ export function WithdrawForm() {
         args: [utilization],
       })) as bigint
 
-      const collateralValue = Number(collateralBal) / 1e18
-      const borrowValue = Number(borrowBal) / 1e6
+      const collateralValue = toCollateralUnits(collateralBal)
+      const borrowValue = toBaseUnits(borrowBal)
 
-      const collateralValueUSD = collateralValue * WETH_PRICE_USD
+      const collateralValueUSD = collateralValue * COLLATERAL_PRICE_USD
       const healthFactor = borrowValue > 0 ? (collateralValueUSD * 0.85) / borrowValue : 999
 
       const apy = (Number(supplyRate) / 1e18) * 31536000 * 100
@@ -109,17 +115,17 @@ export function WithdrawForm() {
     }
 
     if (collateralBalance <= 0) {
-      showError("No Collateral", "You have no WETH collateral to withdraw")
+      showError("No Collateral", `You have no ${COLLATERAL_SYMBOL} collateral to withdraw`)
       return
     }
 
     if (Number.parseFloat(amount) > collateralBalance) {
-      showError("Insufficient Collateral", `You only have ${formatCurrency(collateralBalance, "WETH")} available`)
+      showError("Insufficient Collateral", `You only have ${formatCurrency(collateralBalance, COLLATERAL_SYMBOL)} available`)
       return
     }
 
     // Check if withdrawal would make health factor too low
-    const newCollateralValue = (collateralBalance - Number(amount)) * WETH_PRICE_USD
+    const newCollateralValue = (collateralBalance - Number(amount)) * COLLATERAL_PRICE_USD
     const newHealthFactor = borrowBalance > 0 ? (newCollateralValue * 0.85) / borrowBalance : 999
     
     if (newHealthFactor < 1.2 && borrowBalance > 0) {
@@ -128,16 +134,16 @@ export function WithdrawForm() {
     }
 
     setIsSubmitting(true)
-    showLoading(`Withdrawing ${amount} WETH...`)
+    showLoading(`Withdrawing ${amount} ${COLLATERAL_SYMBOL}...`)
 
     try {
       if (!address) {
         throw new Error("No wallet address available")
       }
 
-      const rawAmount = parseUnits(amount, WETH_DECIMALS)
+      const rawAmount = parseCollateralAmount(amount)
 
-      showLoading(`Withdrawing ${amount} WETH...`)
+      showLoading(`Withdrawing ${amount} ${COLLATERAL_SYMBOL}...`)
       const withdrawHash = await writeContractAsync({
         address: COMET_ADDRESS,
         abi: cometAbi as any,
@@ -164,7 +170,7 @@ export function WithdrawForm() {
 
   const interestLost = Number(amount) * (supplyApy / 100)
   const newCollateralBalance = Math.max(collateralBalance - Number(amount), 0)
-  const newCollateralValueUSD = newCollateralBalance * WETH_PRICE_USD
+  const newCollateralValueUSD = newCollateralBalance * COLLATERAL_PRICE_USD
   const newHealthFactor = borrowBalance > 0 ? (newCollateralValueUSD * 0.85) / borrowBalance : 999
 
   // Success state
@@ -178,7 +184,7 @@ export function WithdrawForm() {
             </div>
             <h2 className="text-3xl font-bold text-blue-400 mb-3">Withdraw Successful!</h2>
             <p className="text-xl text-white mb-2">
-              You have withdrawn <span className="font-bold text-blue-400">{amount} WETH</span>
+              You have withdrawn <span className="font-bold text-blue-400">{amount} {COLLATERAL_SYMBOL}</span>
             </p>
             <p className="text-gray-400 mb-6">
               Supply rate: {supplyApy.toFixed(2)}% APY
@@ -187,13 +193,13 @@ export function WithdrawForm() {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-400">Interest Lost Annually</span>
                 <span className="text-yellow-400 font-semibold">
-                  {interestLost.toFixed(4)} WETH
+                  {interestLost.toFixed(4)} {COLLATERAL_SYMBOL}
                 </span>
               </div>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-400">USD Value</span>
                 <span className="text-white font-semibold">
-                  ${(interestLost * WETH_PRICE_USD).toFixed(2)}
+                  ${(interestLost * COLLATERAL_PRICE_USD).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between items-center mb-2">
@@ -205,7 +211,7 @@ export function WithdrawForm() {
               <div className="flex justify-between items-center">
                 <span className="text-gray-400">Remaining Collateral</span>
                 <span className="text-white font-semibold">
-                  {newCollateralBalance.toFixed(4)} WETH
+                  {newCollateralBalance.toFixed(4)} {COLLATERAL_SYMBOL}
                 </span>
               </div>
             </div>
@@ -228,11 +234,11 @@ export function WithdrawForm() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Image src="/weth-icon.png" alt="WETH" width={32} height={32} className="rounded-full" />
+              <Image src="/weth-icon.png" alt={COLLATERAL_SYMBOL} width={32} height={32} className="rounded-full" />
               <div>
                 <p className="text-sm text-gray-300">Collateral Balance</p>
                 <p className="text-2xl font-bold">
-                  {collateralBalance.toFixed(4)} WETH
+                  {collateralBalance.toFixed(4)} {COLLATERAL_SYMBOL}
                 </p>
               </div>
             </div>
@@ -246,11 +252,11 @@ export function WithdrawForm() {
           
           <div className="flex items-center justify-between pt-4 border-t border-blue-500/20">
             <div className="flex items-center gap-3">
-              <Image src="/weth-icon.png" alt="WETH" width={24} height={24} className="rounded-full" />
+              <Image src="/weth-icon.png" alt={COLLATERAL_SYMBOL} width={24} height={24} className="rounded-full" />
               <div>
                 <p className="text-sm text-gray-300">USD Value</p>
                 <p className="text-lg font-bold">
-                  ${(collateralBalance * WETH_PRICE_USD).toFixed(2)}
+                  ${(collateralBalance * COLLATERAL_PRICE_USD).toFixed(2)}
                 </p>
               </div>
             </div>
@@ -267,16 +273,16 @@ export function WithdrawForm() {
       {/* Withdraw Form */}
       <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
         <CardHeader>
-          <CardTitle className="text-xl">Withdraw WETH</CardTitle>
+          <CardTitle className="text-xl">Withdraw {COLLATERAL_SYMBOL}</CardTitle>
           <CardDescription className="text-gray-400">
-            Withdraw your WETH collateral (reduces earning potential).
+            Withdraw your {COLLATERAL_SYMBOL} collateral (reduces earning potential).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="amount" className="text-gray-300">Amount to Withdraw</Label>
-              <span className="text-sm text-gray-400">WETH only</span>
+              <span className="text-sm text-gray-400">{COLLATERAL_SYMBOL} only</span>
             </div>
             <div className="relative">
               <Input
@@ -288,8 +294,8 @@ export function WithdrawForm() {
                 className="bg-[#252836] border-[#2a2d36] pr-20 h-14 text-lg"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <Image src="/weth-icon.png" alt="WETH" width={20} height={20} className="rounded-full" />
-                <span className="text-white font-semibold">WETH</span>
+                <Image src="/weth-icon.png" alt={COLLATERAL_SYMBOL} width={20} height={20} className="rounded-full" />
+                <span className="text-white font-semibold">{COLLATERAL_SYMBOL}</span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -308,13 +314,13 @@ export function WithdrawForm() {
             <div className="flex justify-between text-sm text-gray-300">
               <span>Interest Lost Annually</span>
               <span className="font-medium text-yellow-400">
-                {interestLost.toFixed(4)} WETH
+                {interestLost.toFixed(4)} {COLLATERAL_SYMBOL}
               </span>
             </div>
             <div className="flex justify-between text-sm text-gray-300">
               <span>USD Value</span>
               <span className="font-medium text-white">
-                ${(interestLost * WETH_PRICE_USD).toFixed(2)}
+                ${(interestLost * COLLATERAL_PRICE_USD).toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between text-sm text-gray-300">
@@ -325,7 +331,7 @@ export function WithdrawForm() {
             </div>
             <div className="flex justify-between text-sm text-gray-300">
               <span>Remaining Collateral</span>
-              <span>{newCollateralBalance.toFixed(4)} WETH</span>
+              <span>{newCollateralBalance.toFixed(4)} {COLLATERAL_SYMBOL}</span>
             </div>
           </div>
 
@@ -342,7 +348,7 @@ export function WithdrawForm() {
             ) : (
               <>
                 <ArrowUpRight className="mr-2 h-5 w-5" />
-                Withdraw WETH
+                Withdraw {COLLATERAL_SYMBOL}
               </>
             )}
           </Button>

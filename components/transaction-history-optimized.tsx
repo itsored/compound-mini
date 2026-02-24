@@ -6,7 +6,15 @@ import { formatCurrency, formatDate } from "@/lib/utils"
 import { ArrowUpRight, ArrowDownLeft, Clock, Loader2, RefreshCw, AlertCircle, TrendingUp, TrendingDown } from "lucide-react"
 import { CryptoIcon } from "./crypto-icon"
 import { useAccount } from "wagmi"
-import { publicClient, COMET_ADDRESS } from "@/lib/comet-onchain"
+import { formatUnits } from "viem"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  BASE_TOKEN_DECIMALS,
+  COLLATERAL_DECIMALS,
+} from "@/lib/comet-onchain"
 
 interface Transaction {
   type: "supply" | "withdraw" | "supplyCollateral" | "withdrawCollateral" | "borrow" | "repay"
@@ -102,29 +110,29 @@ export function TransactionHistory() {
           if (isUserTransaction && log.data && log.data !== '0x') {
             const amountBigInt = BigInt(log.data)
             let type: Transaction['type'] = 'supply'
-            let asset = 'USDC'
+            let asset = BASE_TOKEN_SYMBOL
             let amount = '0'
 
             switch (log.eventName) {
               case 'Supply':
                 type = 'supply'
-                asset = 'USDC'
-                amount = (Number(amountBigInt) / 1e6).toFixed(2)
+                asset = BASE_TOKEN_SYMBOL
+                amount = Number(formatUnits(amountBigInt, BASE_TOKEN_DECIMALS)).toFixed(2)
                 break
               case 'Withdraw':
                 type = 'withdraw'
-                asset = 'USDC'
-                amount = (Number(amountBigInt) / 1e6).toFixed(2)
+                asset = BASE_TOKEN_SYMBOL
+                amount = Number(formatUnits(amountBigInt, BASE_TOKEN_DECIMALS)).toFixed(2)
                 break
               case 'SupplyCollateral':
                 type = 'supplyCollateral'
-                asset = 'WETH'
-                amount = (Number(amountBigInt) / 1e18).toFixed(6)
+                asset = COLLATERAL_SYMBOL
+                amount = Number(formatUnits(amountBigInt, COLLATERAL_DECIMALS)).toFixed(6)
                 break
               case 'WithdrawCollateral':
                 type = 'withdrawCollateral'
-                asset = 'WETH'
-                amount = (Number(amountBigInt) / 1e18).toFixed(6)
+                asset = COLLATERAL_SYMBOL
+                amount = Number(formatUnits(amountBigInt, COLLATERAL_DECIMALS)).toFixed(6)
                 break
             }
 
@@ -255,14 +263,7 @@ export function TransactionHistory() {
   }, [])
 
   const getAssetDisplayName = useCallback((asset: string) => {
-    switch (asset) {
-      case "USDC":
-        return "USDC"
-      case "WETH":
-        return "WETH"
-      default:
-        return asset
-    }
+    return asset
   }, [])
 
   // Memoized transaction list to prevent unnecessary re-renders

@@ -12,8 +12,17 @@ import { useFeedback } from "@/lib/feedback-provider"
 import cometAbi from "@/lib/abis/comet.json"
 import { useAccount, useWriteContract } from "wagmi"
 import { useGuestMode } from "@/lib/guest-mode"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
-import { parseUnits } from "viem"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  USDC_ADDRESS,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  parseBaseAmount,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 
 export function BorrowForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
@@ -29,9 +38,6 @@ export function BorrowForm() {
   const [mounted, setMounted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [borrowSuccess, setBorrowSuccess] = useState(false)
-
-  const USDC_DECIMALS = 6
-  const USDC_PRICE_USD = 1 // USDC is pegged to USD
 
   useEffect(() => {
     setMounted(true)
@@ -67,8 +73,8 @@ export function BorrowForm() {
         }) as Promise<bigint>,
       ])
 
-      const collateralValue = Number(collateralBal) / 1e18
-      const borrowValue = Number(borrowBal) / 1e6
+      const collateralValue = toCollateralUnits(collateralBal)
+      const borrowValue = toBaseUnits(borrowBal)
 
       // Calculate health factor
       const wethPrice = 3000 // Placeholder
@@ -106,7 +112,7 @@ export function BorrowForm() {
     }
 
     if (collateralBalance <= 0) {
-      showError("No Collateral", "You need to supply WETH as collateral before borrowing")
+      showError("No Collateral", `You need to supply ${COLLATERAL_SYMBOL} as collateral before borrowing`)
       return
     }
 
@@ -116,14 +122,14 @@ export function BorrowForm() {
     }
 
     setIsSubmitting(true)
-    showLoading(`Borrowing ${amount} USDC...`)
+    showLoading(`Borrowing ${amount} ${BASE_TOKEN_SYMBOL}...`)
 
     try {
       if (!address) {
         throw new Error("No wallet address available")
       }
 
-      const rawAmount = parseUnits(amount, USDC_DECIMALS)
+      const rawAmount = parseBaseAmount(amount)
 
       const minBorrow = (await publicClient.readContract({
         address: COMET_ADDRESS,
@@ -132,10 +138,10 @@ export function BorrowForm() {
       })) as bigint
 
       if (rawAmount < minBorrow) {
-        throw new Error(`Minimum borrow is ${Number(minBorrow) / 1e6} USDC`)
+        throw new Error(`Minimum borrow is ${toBaseUnits(minBorrow)} ${BASE_TOKEN_SYMBOL}`)
       }
 
-      showLoading(`Borrowing ${amount} USDC...`)
+      showLoading(`Borrowing ${amount} ${BASE_TOKEN_SYMBOL}...`)
       const borrowHash = await writeContractAsync({
         address: COMET_ADDRESS,
         abi: cometAbi as any,
@@ -163,7 +169,7 @@ export function BorrowForm() {
         abi: cometAbi as any,
         functionName: "baseBorrowMin",
       })) as bigint
-      setAmount((Number(minBorrow) / 1e6).toString())
+      setAmount(toBaseUnits(minBorrow).toString())
     } catch (error) {
       console.error("Error getting minimum borrow:", error)
     }
@@ -184,7 +190,7 @@ export function BorrowForm() {
             </div>
             <h2 className="text-3xl font-bold text-yellow-400 mb-3">Borrow Successful!</h2>
             <p className="text-xl text-white mb-2">
-              You have borrowed <span className="font-bold text-yellow-400">{amount} USDC</span>
+              You have borrowed <span className="font-bold text-yellow-400">{amount} {BASE_TOKEN_SYMBOL}</span>
             </p>
             <p className="text-gray-400 mb-6">
               Borrow rate: {borrowApy.toFixed(2)}% APY
@@ -205,7 +211,7 @@ export function BorrowForm() {
               <div className="flex justify-between items-center">
                 <span className="text-gray-400">Total Borrowed</span>
                 <span className="text-white font-semibold">
-                  ${newBorrowBalance.toFixed(2)} USDC
+                  ${newBorrowBalance.toFixed(2)} {BASE_TOKEN_SYMBOL}
                 </span>
               </div>
             </div>
@@ -228,11 +234,11 @@ export function BorrowForm() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Image src="/weth-icon.png" alt="WETH" width={32} height={32} className="rounded-full" />
+              <Image src="/weth-icon.png" alt={COLLATERAL_SYMBOL} width={32} height={32} className="rounded-full" />
               <div>
                 <p className="text-sm text-gray-300">Collateral Balance</p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency(collateralBalance, "WETH")}
+                  {formatCurrency(collateralBalance, COLLATERAL_SYMBOL)}
                 </p>
               </div>
             </div>
@@ -247,11 +253,11 @@ export function BorrowForm() {
           {borrowBalance > 0 && (
             <div className="flex items-center justify-between pt-4 border-t border-yellow-500/20">
               <div className="flex items-center gap-3">
-                <Image src="/usdc-icon.webp" alt="USDC" width={24} height={24} className="rounded-full" />
+                <Image src="/usdc-icon.webp" alt={BASE_TOKEN_SYMBOL} width={24} height={24} className="rounded-full" />
                 <div>
                   <p className="text-sm text-gray-300">Currently Borrowed</p>
                   <p className="text-lg font-bold">
-                    ${borrowBalance.toFixed(2)} USDC
+                    ${borrowBalance.toFixed(2)} {BASE_TOKEN_SYMBOL}
                   </p>
                 </div>
               </div>
@@ -263,16 +269,16 @@ export function BorrowForm() {
       {/* Borrow Form */}
       <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
         <CardHeader>
-          <CardTitle className="text-xl">Borrow USDC</CardTitle>
+          <CardTitle className="text-xl">Borrow {BASE_TOKEN_SYMBOL}</CardTitle>
           <CardDescription className="text-gray-400">
-            Borrow USDC against your WETH collateral.
+            Borrow {BASE_TOKEN_SYMBOL} against your {COLLATERAL_SYMBOL} collateral.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="amount" className="text-gray-300">Amount to Borrow</Label>
-              <span className="text-sm text-gray-400">USDC only</span>
+              <span className="text-sm text-gray-400">{BASE_TOKEN_SYMBOL} only</span>
             </div>
             <div className="relative">
               <Input
@@ -284,8 +290,8 @@ export function BorrowForm() {
                 className="bg-[#252836] border-[#2a2d36] pr-20 h-14 text-lg"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <Image src="/usdc-icon.webp" alt="USDC" width={20} height={20} className="rounded-full" />
-                <span className="text-white font-semibold">USDC</span>
+                <Image src="/usdc-icon.webp" alt={BASE_TOKEN_SYMBOL} width={20} height={20} className="rounded-full" />
+                <span className="text-white font-semibold">{BASE_TOKEN_SYMBOL}</span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -332,7 +338,7 @@ export function BorrowForm() {
             ) : (
               <>
                 <ArrowDownRight className="mr-2 h-5 w-5" />
-                Borrow USDC
+                Borrow {BASE_TOKEN_SYMBOL}
               </>
             )}
           </Button>
@@ -341,7 +347,7 @@ export function BorrowForm() {
 
       {/* Benefits Section */}
       <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-white">Why Borrow USDC?</h3>
+        <h3 className="text-lg font-semibold text-white">Why Borrow {BASE_TOKEN_SYMBOL}?</h3>
         <div className="grid grid-cols-1 gap-3">
           <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
             <CardContent className="p-4 flex items-center gap-3">
@@ -357,7 +363,7 @@ export function BorrowForm() {
               <Shield className="h-6 w-6 text-blue-400" />
               <div>
                 <h4 className="font-semibold">Maintain Exposure</h4>
-                <p className="text-sm text-gray-400">Keep your WETH position while accessing cash.</p>
+                <p className="text-sm text-gray-400">Keep your {COLLATERAL_SYMBOL} position while accessing cash.</p>
               </div>
             </CardContent>
           </Card>

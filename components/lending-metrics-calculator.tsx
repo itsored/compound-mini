@@ -13,7 +13,16 @@ import { Progress } from "@/components/ui/progress"
 import { Slider } from "@/components/ui/slider"
 import { Calculator, TrendingUp, TrendingDown, Target, Zap, AlertTriangle, DollarSign, BarChart3, PieChart } from "lucide-react"
 import { formatUnits } from "viem"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, CHAINLINK_ETH_USD_FEED } from "@/lib/comet-onchain"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  CHAINLINK_ETH_USD_FEED,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 import cometAbi from "@/onchain/abis/CometInterface.json"
 
 const CHAINLINK_PRICE_FEED_ABI = [
@@ -108,7 +117,7 @@ export function LendingMetricsCalculator() {
 
       console.log("🔍 Fetching lending metrics for:", address)
 
-      // Fetch WETH price from Chainlink
+      // Fetch collateral price from Chainlink
       const priceData = await publicClient.readContract({
         address: CHAINLINK_ETH_USD_FEED,
         abi: CHAINLINK_PRICE_FEED_ABI,
@@ -171,11 +180,11 @@ export function LendingMetricsCalculator() {
         args: []
       }) as bigint
 
-      const utilizationRate = totalSupply > 0 ? Number(formatUnits(totalBorrowed, 6)) / Number(formatUnits(totalSupply, 6)) : 0
+      const utilizationRate = totalSupply > BigInt(0) ? toBaseUnits(totalBorrowed) / toBaseUnits(totalSupply) : 0
 
       // Convert to readable amounts
-      const collateralAmount = Number(formatUnits(wethCollateralBalance, 18))
-      const borrowAmount = Number(formatUnits(usdcBorrowBalance, 6))
+      const collateralAmount = toCollateralUnits(wethCollateralBalance)
+      const borrowAmount = toBaseUnits(usdcBorrowBalance)
 
       // Calculate current metrics
       const collateralValue = collateralAmount * currentWethPrice
@@ -430,14 +439,14 @@ export function LendingMetricsCalculator() {
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-text-primary">Collateral</h3>
-                    <p className="text-xs text-text-secondary">WETH value</p>
+                    <p className="text-xs text-text-secondary">{COLLATERAL_SYMBOL} value</p>
                   </div>
                 </div>
                 <div className="space-y-1">
                   <p className="text-2xl font-semibold text-text-primary">${(metrics.collateralAmount * wethPrice).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                   <div className="flex items-center justify-between text-xs">
-                    <p className="text-text-secondary whitespace-normal break-words">{metrics.collateralAmount.toFixed(4)} WETH</p>
-                    <p className="text-text-tertiary whitespace-normal break-words">${wethPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}/WETH</p>
+                    <p className="text-text-secondary whitespace-normal break-words">{metrics.collateralAmount.toFixed(4)} {COLLATERAL_SYMBOL}</p>
+                    <p className="text-text-tertiary whitespace-normal break-words">${wethPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}/{COLLATERAL_SYMBOL}</p>
                   </div>
                 </div>
               </div>
@@ -449,7 +458,7 @@ export function LendingMetricsCalculator() {
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-text-primary">Borrowed</h3>
-                    <p className="text-xs text-text-secondary">USDC</p>
+                    <p className="text-xs text-text-secondary">{BASE_TOKEN_SYMBOL}</p>
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -518,35 +527,35 @@ export function LendingMetricsCalculator() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="collateral" className="text-sm font-medium">
-                    WETH Collateral Amount
+                    {COLLATERAL_SYMBOL} Collateral Amount
                   </Label>
                   <Input
                     id="collateral"
                     type="number"
                     value={collateralInput}
                     onChange={(e) => setCollateralInput(e.target.value)}
-                    placeholder="Enter WETH amount"
+                    placeholder={`Enter ${COLLATERAL_SYMBOL} amount`}
                     className="text-lg"
                   />
                   <p className="text-xs text-text-secondary">
-                    Current: {metrics.collateralAmount.toFixed(4)} WETH
+                    Current: {metrics.collateralAmount.toFixed(4)} {COLLATERAL_SYMBOL}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="borrow" className="text-sm font-medium">
-                    USDC Borrow Amount
+                    {BASE_TOKEN_SYMBOL} Borrow Amount
                   </Label>
                   <Input
                     id="borrow"
                     type="number"
                     value={borrowInput}
                     onChange={(e) => setBorrowInput(e.target.value)}
-                    placeholder="Enter USDC amount"
+                    placeholder={`Enter ${BASE_TOKEN_SYMBOL} amount`}
                     className="text-lg"
                   />
                   <p className="text-xs text-text-secondary">
-                    Current: ${metrics.borrowAmount.toFixed(2)}
+                    Current: ${metrics.borrowAmount.toFixed(2)} {BASE_TOKEN_SYMBOL}
                   </p>
                 </div>
               </div>
@@ -608,7 +617,7 @@ export function LendingMetricsCalculator() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Opt. Collat</span>
                     <span className="text-lg font-bold text-text-primary">
-                      {metrics.optimalCollateral.toFixed(4)} WETH
+                      {metrics.optimalCollateral.toFixed(4)} {COLLATERAL_SYMBOL}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">

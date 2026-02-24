@@ -17,9 +17,15 @@ import { useAccount, useWriteContract } from "wagmi"
 import { useGuestMode } from "@/lib/guest-mode"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { publicClient, WETH_ADDRESS, COMET_ADDRESS } from "@/lib/comet-onchain"
+import {
+  publicClient,
+  WETH_ADDRESS,
+  COMET_ADDRESS,
+  COLLATERAL_SYMBOL,
+  parseCollateralAmount,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 import { waitForBlockConfirmation } from "@/lib/simple-debug"
-import { parseUnits } from "viem"
 import erc20Abi from "@/lib/abis/erc20.json"
 import cometAbi from "@/lib/abis/comet.json"
 
@@ -58,7 +64,7 @@ export function SupplyForm() {
         functionName: "balanceOf",
         args: [address as `0x${string}`],
       })) as bigint
-      setWethBalance(Number(balance) / 1e18)
+      setWethBalance(toCollateralUnits(balance))
     } catch (error) {
       console.error("Error loading WETH balance:", error)
       setWethBalance(0)
@@ -74,7 +80,7 @@ export function SupplyForm() {
         functionName: "collateralBalanceOf",
         args: [address as `0x${string}`, WETH_ADDRESS as `0x${string}`],
       })) as bigint
-      setCollateralBalance(Number(collateral) / 1e18)
+      setCollateralBalance(toCollateralUnits(collateral))
     } catch (error) {
       console.error("Error loading collateral:", error)
       setCollateralBalance(0)
@@ -121,19 +127,19 @@ export function SupplyForm() {
     }
 
     if (Number.parseFloat(amount) > wethBalance) {
-      showError("Insufficient Balance", "You don't have enough WETH in your wallet")
+      showError("Insufficient Balance", `You don't have enough ${COLLATERAL_SYMBOL} in your wallet`)
       return
     }
 
     try {
       setIsSubmitting(true)
-      showLoading(`Supplying ${amount} WETH...`)
+      showLoading(`Supplying ${amount} ${COLLATERAL_SYMBOL}...`)
 
       if (!address) throw new Error("No wallet address")
       console.log("🔍 [DEBUG] Supply transaction - address:", address)
       console.log("🔍 [DEBUG] Supply transaction - WETH_ADDRESS:", WETH_ADDRESS)
       console.log("🔍 [DEBUG] Supply transaction - COMET_ADDRESS:", COMET_ADDRESS)
-      const value = parseUnits(amount, 18)
+      const value = parseCollateralAmount(amount)
 
       // Check allowance via readContract
       const currentAllowance = (await publicClient.readContract({
@@ -144,7 +150,7 @@ export function SupplyForm() {
       })) as bigint
 
       if (currentAllowance < value) {
-        showLoading("Approving WETH...")
+        showLoading(`Approving ${COLLATERAL_SYMBOL}...`)
         console.log("🔍 [DEBUG] About to approve with wallet client")
         const approveHash = await writeContractAsync({
           address: WETH_ADDRESS as `0x${string}`,
@@ -154,10 +160,10 @@ export function SupplyForm() {
         })
         await waitForBlockConfirmation(publicClient, approveHash)
         console.log("🔍 [DEBUG] Approval transaction confirmed")
-        showSuccess("Approval successful", "WETH approved for Compound Mini.")
+        showSuccess("Approval successful", `${COLLATERAL_SYMBOL} approved for Compound Mini.`)
       }
 
-      showLoading("Supplying WETH...")
+      showLoading(`Supplying ${COLLATERAL_SYMBOL}...`)
       const supplyHash = await writeContractAsync({
         address: COMET_ADDRESS as `0x${string}`,
         abi: cometAbi as any,
@@ -207,7 +213,7 @@ export function SupplyForm() {
             </div>
             <h2 className="text-3xl font-bold text-green-400 mb-3">Supply Successful!</h2>
             <p className="text-xl text-white mb-2">
-              You have supplied <span className="font-bold text-green-400">{amount} WETH</span>
+              You have supplied <span className="font-bold text-green-400">{amount} {COLLATERAL_SYMBOL}</span>
             </p>
             <p className="text-gray-400 mb-6">
               You're now earning interest on your supplied assets.
@@ -231,7 +237,7 @@ export function SupplyForm() {
       transition={{ duration: 0.3 }}
       className="p-4 pb-24 space-y-4"
     >
-      {/* WETH Balance Card */}
+      {/* Collateral Balance Card */}
       <Card className="bg-gradient-to-br from-green-900/20 to-blue-900/20 border-green-500/20 text-white">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
@@ -239,24 +245,24 @@ export function SupplyForm() {
               <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
                 <Image 
                   src="/weth-icon.png" 
-                  alt="WETH" 
+                  alt={COLLATERAL_SYMBOL} 
                   width={24} 
                   height={24} 
                   className="rounded-full"
                 />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">WETH</h3>
+                <h3 className="font-semibold text-lg">{COLLATERAL_SYMBOL}</h3>
                 <p className="text-sm text-gray-400">Wallet balance and supplied</p>
               </div>
             </div>
             <div className="text-right space-y-1">
               <div className="text-2xl font-bold text-green-400">
-                {wethBalance.toFixed(4)} WETH
+                {wethBalance.toFixed(4)} {COLLATERAL_SYMBOL}
               </div>
               <div className="text-sm text-gray-400">Wallet</div>
               <div className="text-lg font-semibold text-blue-300">
-                {collateralBalance.toFixed(4)} WETH
+                {collateralBalance.toFixed(4)} {COLLATERAL_SYMBOL}
               </div>
               <div className="text-sm text-gray-400">Supplied</div>
             </div>
@@ -268,8 +274,8 @@ export function SupplyForm() {
       <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
         <CardContent className="p-6 space-y-6">
           <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Supply WETH</h2>
-            <p className="text-gray-400">Earn interest on your WETH assets</p>
+            <h2 className="text-xl font-semibold mb-2">Supply {COLLATERAL_SYMBOL}</h2>
+            <p className="text-gray-400">Earn interest on your {COLLATERAL_SYMBOL} assets</p>
           </div>
 
           {/* Amount Input */}
@@ -277,7 +283,7 @@ export function SupplyForm() {
             <div className="flex justify-between items-center">
               <label className="text-sm font-medium">Amount</label>
               <span className="text-xs text-gray-400">
-                Balance: {wethBalance.toFixed(4)} WETH
+                Balance: {wethBalance.toFixed(4)} {COLLATERAL_SYMBOL}
               </span>
             </div>
             <div className="relative">
@@ -300,12 +306,12 @@ export function SupplyForm() {
                 <div className="flex items-center gap-1 text-sm text-gray-400">
                   <Image 
                     src="/weth-icon.png" 
-                    alt="WETH" 
+                    alt={COLLATERAL_SYMBOL} 
                     width={16} 
                     height={16} 
                     className="rounded-full"
                   />
-                  <span>WETH</span>
+                  <span>{COLLATERAL_SYMBOL}</span>
                 </div>
               </div>
             </div>
@@ -331,7 +337,7 @@ export function SupplyForm() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Projected Annual Earnings</span>
                     <span className="text-white font-medium">
-                      {projectedEarnings.toFixed(4)} WETH
+                      {projectedEarnings.toFixed(4)} {COLLATERAL_SYMBOL}
                     </span>
                   </div>
                   
@@ -360,7 +366,7 @@ export function SupplyForm() {
             ) : (
               <div className="flex items-center">
                 <PiggyBank className="h-5 w-5 mr-3" />
-                Supply {amount || '0'} WETH
+                Supply {amount || '0'} {COLLATERAL_SYMBOL}
                 <ArrowRight className="h-5 w-5 ml-3" />
               </div>
             )}
@@ -368,14 +374,14 @@ export function SupplyForm() {
 
           {/* Benefits Section */}
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-white">Why Supply WETH?</h3>
+            <h3 className="text-lg font-semibold text-white">Why Supply {COLLATERAL_SYMBOL}?</h3>
             <div className="grid grid-cols-1 gap-3">
               <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
                 <CardContent className="p-4 flex items-center gap-3">
                   <CheckCircle className="h-6 w-6 text-green-400" />
                   <div>
                     <h4 className="font-semibold">Earn Interest</h4>
-                    <p className="text-sm text-gray-400">Start earning {supplyApy > 0 ? `${supplyApy.toFixed(2)}%` : 'variable'} APY on your WETH immediately.</p>
+                    <p className="text-sm text-gray-400">Start earning {supplyApy > 0 ? `${supplyApy.toFixed(2)}%` : 'variable'} APY on your {COLLATERAL_SYMBOL} immediately.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -384,7 +390,7 @@ export function SupplyForm() {
                   <Shield className="h-6 w-6 text-blue-400" />
                   <div>
                     <h4 className="font-semibold">Use as Collateral</h4>
-                    <p className="text-sm text-gray-400">Supplied WETH can be used as collateral to borrow other assets.</p>
+                    <p className="text-sm text-gray-400">Supplied {COLLATERAL_SYMBOL} can be used as collateral to borrow other assets.</p>
                   </div>
                 </CardContent>
               </Card>

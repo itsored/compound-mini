@@ -2,18 +2,24 @@
 
 import { useAccount } from "wagmi"
 import { useGuestMode } from "@/lib/guest-mode"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { 
   PiggyBank, 
   ArrowDownRight, 
   ArrowUpRight,
   ArrowDownLeft,
-  BarChart3,
   ArrowRight
 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 
@@ -23,7 +29,7 @@ interface ActionState {
   canWithdraw: boolean
   canRepay: boolean
   hasPosition: boolean
-  wethBalance: number
+  collateralWalletBalance: number
   collateralValue: number
   borrowValue: number
 }
@@ -66,18 +72,18 @@ export function PrimaryActions() {
         }) as Promise<bigint>
       ])
 
-      const wethBal = Number(wethBalance) / 1e18
-      const collateralBal = Number(collateralBalance) / 1e18
-      const borrowBal = Number(borrowBalance) / 1e6
+      const collateralWalletBalance = toCollateralUnits(wethBalance)
+      const collateralBal = toCollateralUnits(collateralBalance)
+      const borrowBal = toBaseUnits(borrowBalance)
       const hasPosition = collateralBal > 0 || borrowBal > 0
 
       setActionState({
-        canSupply: wethBal > 0,
+        canSupply: collateralWalletBalance > 0,
         canBorrow: hasPosition && collateralBal > 0,
         canWithdraw: hasPosition && collateralBal > 0,
         canRepay: hasPosition && borrowBal > 0,
         hasPosition,
-        wethBalance: wethBal,
+        collateralWalletBalance,
         collateralValue: collateralBal,
         borrowValue: borrowBal
       })
@@ -136,8 +142,8 @@ export function PrimaryActions() {
                   <h3 className="font-semibold">Supply Assets</h3>
                   <p className="text-sm text-text-tertiary">
                     {actionState.canSupply 
-                      ? `${actionState.wethBalance.toFixed(4)} WETH available`
-                      : "No WETH to supply"
+                      ? `${actionState.collateralWalletBalance.toFixed(4)} ${COLLATERAL_SYMBOL} available`
+                      : `No ${COLLATERAL_SYMBOL} to supply`
                     }
                   </p>
                 </div>
@@ -167,7 +173,7 @@ export function PrimaryActions() {
                   <ArrowDownRight className="h-6 w-6 text-compound-warning-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Borrow USDC</h3>
+                  <h3 className="font-semibold">Borrow {BASE_TOKEN_SYMBOL}</h3>
                   <p className="text-sm text-text-tertiary">
                     {actionState.canBorrow 
                       ? "Borrow against your collateral"
@@ -198,7 +204,7 @@ export function PrimaryActions() {
                       <div>
                         <h3 className="font-semibold">Withdraw Collateral</h3>
                         <p className="text-sm text-text-tertiary">
-                          {actionState.collateralValue.toFixed(4)} WETH available
+                          {actionState.collateralValue.toFixed(4)} {COLLATERAL_SYMBOL} available
                         </p>
                       </div>
                     </div>
@@ -223,7 +229,7 @@ export function PrimaryActions() {
                   <div>
                     <h3 className="font-semibold">Repay Debt</h3>
                     <p className="text-sm text-text-tertiary">
-                      ${actionState.borrowValue.toFixed(2)} USDC borrowed
+                      ${actionState.borrowValue.toFixed(2)} {BASE_TOKEN_SYMBOL} borrowed
                     </p>
                   </div>
                 </div>
@@ -239,7 +245,7 @@ export function PrimaryActions() {
       <div className="mt-6 p-4 compound-card rounded-lg">
         <p className="text-xs text-text-tertiary text-center">
           {!actionState.hasPosition 
-            ? "Start by supplying WETH as collateral to earn interest and unlock borrowing"
+            ? `Start by supplying ${COLLATERAL_SYMBOL} as collateral to earn interest and unlock borrowing ${BASE_TOKEN_SYMBOL}`
             : "Manage your position, add more collateral, or borrow additional funds"
           }
         </p>

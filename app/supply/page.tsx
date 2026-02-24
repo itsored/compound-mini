@@ -2,6 +2,7 @@
 
 import { SupplyForm } from "@/components/supply-form"
 import { Navigation } from "@/components/navigation"
+import { NetworkSwitcher } from "@/components/network-switcher"
 import { WalletConnect } from "@/components/wallet-connect"
 import { motion } from "framer-motion"
 
@@ -14,11 +15,12 @@ export default function SupplyPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="pt-4"
+          className="pt-4 space-y-2"
         >
           <div className="rounded-xl border border-border-primary bg-bg-secondary/70 backdrop-blur supports-[backdrop-filter]:bg-bg-secondary/60 shadow-sm px-3 py-2 flex justify-end">
             <WalletConnect />
           </div>
+          <NetworkSwitcher variant="compact" />
         </motion.div>
         
         <motion.div

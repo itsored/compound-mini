@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { RefreshCw, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react"
 import Image from "next/image"
-import { publicClient, COMET_ADDRESS, getRates } from "@/lib/comet-onchain"
+import { publicClient, COMET_ADDRESS, getRates, BASE_TOKEN_SYMBOL } from "@/lib/comet-onchain"
 import cometAbi from "@/lib/abis/comet.json"
 
 export function RatesDashboard() {
@@ -93,7 +93,7 @@ export function RatesDashboard() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg">Live USDC Rates</CardTitle>
+            <CardTitle className="text-lg">Live {BASE_TOKEN_SYMBOL} Rates</CardTitle>
             <CardDescription className="text-text-tertiary">
               Real-time market rates
             </CardDescription>
@@ -135,18 +135,18 @@ export function RatesDashboard() {
           </div>
         ) : rates ? (
           <div className="space-y-4">
-            {/* USDC Rates */}
+            {/* Base token rates */}
             <div className="bg-bg-tertiary p-4 rounded-lg">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Image 
                     src="/usdc-icon.webp" 
-                    alt="USDC" 
+                    alt={BASE_TOKEN_SYMBOL}
                     width={24} 
                     height={24} 
                     className="rounded-full"
                   />
-                  <span className="font-medium">USDC Market</span>
+                  <span className="font-medium">{BASE_TOKEN_SYMBOL} Market</span>
                 </div>
                 <div className="text-xs text-text-tertiary">
                   {rates.utilization.toFixed(1)}% utilized

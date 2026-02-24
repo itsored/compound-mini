@@ -7,7 +7,15 @@ import { ArrowUpRight, ArrowDownLeft, Clock, Loader2, RefreshCw, AlertCircle, Tr
 import { CryptoIcon } from "./crypto-icon"
 import Image from "next/image"
 import { useAccount } from "wagmi"
-import { publicClient, COMET_ADDRESS } from "@/lib/comet-onchain"
+import { formatUnits } from "viem"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  BASE_TOKEN_DECIMALS,
+  COLLATERAL_DECIMALS,
+} from "@/lib/comet-onchain"
 import cometAbi from "@/lib/abis/comet.json"
 
 interface Transaction {
@@ -123,7 +131,7 @@ export function TransactionHistory() {
               // Parse the amount from log data based on event type
               let amountBigInt = 0n
               let type: Transaction['type'] = 'supply'
-              let asset = 'USDC'
+              let asset = BASE_TOKEN_SYMBOL
 
               try {
                 // Parse event data based on event type and structure
@@ -150,11 +158,11 @@ export function TransactionHistory() {
                 switch (log.eventName) {
                   case 'Supply':
                     type = 'supply'
-                    asset = 'USDC'
+                    asset = BASE_TOKEN_SYMBOL
                     break
                   case 'Withdraw':
                     // In Compound v3, Withdraw can be either actual withdrawal or borrowing/repay
-                    const withdrawAmount = Number(amountBigInt) / 1e6
+                    const withdrawAmount = Number(formatUnits(amountBigInt, BASE_TOKEN_DECIMALS))
                     // More sophisticated logic to distinguish between withdraw, borrow, and repay
                     if (userBorrowBalance > 0n && withdrawAmount < 1000) {
                       // Small amount with existing borrow balance = repay
@@ -166,44 +174,44 @@ export function TransactionHistory() {
                       // Medium amount = likely a borrow
                       type = 'borrow'
                     }
-                    asset = 'USDC'
+                    asset = BASE_TOKEN_SYMBOL
                     break
                   case 'SupplyCollateral':
-                    // Only classify as WETH if the amount is significant (>= 0.001 WETH)
-                    const wethAmount = Number(amountBigInt) / 1e18
-                    if (wethAmount >= 0.001) {
+                    // Only classify as collateral if the amount is significant (>= 0.001 token)
+                    const collateralAmount = Number(formatUnits(amountBigInt, COLLATERAL_DECIMALS))
+                    if (collateralAmount >= 0.001) {
                       type = 'supplyCollateral'
-                      asset = 'WETH'
+                      asset = COLLATERAL_SYMBOL
                     } else {
-                      // This is likely a USDC transaction with collateral event
+                      // This is likely a base token transaction with collateral event
                       type = 'supply'
-                      asset = 'USDC'
+                      asset = BASE_TOKEN_SYMBOL
                     }
                     break
                   case 'WithdrawCollateral':
-                    // Only classify as WETH if the amount is significant (>= 0.001 WETH)
-                    const wethWithdrawAmount = Number(amountBigInt) / 1e18
-                    if (wethWithdrawAmount >= 0.001) {
+                    // Only classify as collateral if the amount is significant (>= 0.001 token)
+                    const collateralWithdrawAmount = Number(formatUnits(amountBigInt, COLLATERAL_DECIMALS))
+                    if (collateralWithdrawAmount >= 0.001) {
                       type = 'withdrawCollateral'
-                      asset = 'WETH'
+                      asset = COLLATERAL_SYMBOL
                     } else {
-                      // This is likely a USDC transaction with collateral event
+                      // This is likely a base token transaction with collateral event
                       type = 'withdraw'
-                      asset = 'USDC'
+                      asset = BASE_TOKEN_SYMBOL
                     }
                     break
                   case 'Transfer':
-                    // Transfer events from Comet contract - usually USDC transfers
+                    // Transfer events from Comet contract - usually base token transfers
                     // Check if this is a transfer to or from the user
                     if (log.topics.length >= 3) {
                       const from = log.topics[1]
                       const to = log.topics[2]
-                      const transferAmount = Number(amountBigInt) / 1e6
+                      const transferAmount = Number(formatUnits(amountBigInt, BASE_TOKEN_DECIMALS))
 
                       // If transfer is TO the user, it's likely a borrow
                       if (to && to.toLowerCase().includes(address.toLowerCase().slice(2))) {
                         type = 'borrow'
-                        asset = 'USDC'
+                        asset = BASE_TOKEN_SYMBOL
                       }
                       // If transfer is FROM the user, it's likely a repay
                       else if (from && from.toLowerCase().includes(address.toLowerCase().slice(2))) {
@@ -213,7 +221,7 @@ export function TransactionHistory() {
                         } else {
                           type = 'withdraw'
                         }
-                        asset = 'USDC'
+                        asset = BASE_TOKEN_SYMBOL
                       }
                     }
                     break
@@ -221,12 +229,10 @@ export function TransactionHistory() {
 
                 // Format amount based on asset decimals
                 let amount = '0'
-                if (asset === 'USDC') {
-                  // USDC has 6 decimals
-                  amount = (Number(amountBigInt) / 1e6).toFixed(2)
-                } else if (asset === 'WETH') {
-                  // WETH has 18 decimals
-                  amount = (Number(amountBigInt) / 1e18).toFixed(6)
+                if (asset === BASE_TOKEN_SYMBOL) {
+                  amount = Number(formatUnits(amountBigInt, BASE_TOKEN_DECIMALS)).toFixed(2)
+                } else if (asset === COLLATERAL_SYMBOL) {
+                  amount = Number(formatUnits(amountBigInt, COLLATERAL_DECIMALS)).toFixed(6)
                 } else {
                   amount = amountBigInt.toString()
                 }
@@ -241,12 +247,12 @@ export function TransactionHistory() {
                   // Priority order for transaction types (higher number = higher priority)
                   // We want to prioritize the most specific/meaningful action
                   const typePriority = {
-                    'supplyCollateral': 6,    // Highest priority - WETH collateral supply
-                    'withdrawCollateral': 6,  // Highest priority - WETH collateral withdraw
-                    'borrow': 5,              // High priority - USDC borrow (more specific than supply)
-                    'repay': 4,               // High priority - USDC repay (more specific than supply)
-                    'withdraw': 3,            // Medium priority - USDC withdraw
-                    'supply': 2               // Lower priority - USDC supply (generic)
+                    'supplyCollateral': 6,    // Highest priority - collateral supply
+                    'withdrawCollateral': 6,  // Highest priority - collateral withdraw
+                    'borrow': 5,              // High priority - base borrow (more specific than supply)
+                    'repay': 4,               // High priority - base repay (more specific than supply)
+                    'withdraw': 3,            // Medium priority - base withdraw
+                    'supply': 2               // Lower priority - base supply (generic)
                   }
 
                   // Only process if we haven't seen this transaction before, or if this event has higher priority
@@ -420,14 +426,7 @@ export function TransactionHistory() {
   }, [])
 
   const getAssetDisplayName = useCallback((asset: string) => {
-    switch (asset) {
-      case "USDC":
-        return "USDC"
-      case "WETH":
-        return "WETH"
-      default:
-        return asset
-    }
+    return asset
   }, [])
 
   // Memoized transaction list to prevent unnecessary re-renders
@@ -442,18 +441,18 @@ export function TransactionHistory() {
               <div className={`${getTransactionBg(tx.type)} p-2 rounded-full`}>
                 {getTransactionIcon(tx.type)}
               </div>
-              {tx.asset === 'USDC' ? (
+              {tx.asset === BASE_TOKEN_SYMBOL ? (
                 <Image 
                   src="/usdc-icon.webp" 
-                  alt="USDC" 
+                  alt={BASE_TOKEN_SYMBOL} 
                   width={20} 
                   height={20} 
                   className="rounded-full"
                 />
-              ) : tx.asset === 'WETH' ? (
+              ) : tx.asset === COLLATERAL_SYMBOL ? (
                 <Image 
                   src="/weth-icon.png" 
-                  alt="WETH" 
+                  alt={COLLATERAL_SYMBOL} 
                   width={20} 
                   height={20} 
                   className="rounded-full"

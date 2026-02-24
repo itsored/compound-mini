@@ -14,17 +14,25 @@ import {
   Loader2
 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  USDC_ADDRESS,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
-import Image from "next/image"
 
 interface SmartMetricsData {
   healthFactor: number
   netWorth: number
   collateralValue: number
   borrowValue: number
-  wethPrice: number
+  collateralPrice: number
   hasPosition: boolean
   lastUpdated: number
 }
@@ -76,15 +84,15 @@ export function SmartMetrics() {
         }) as Promise<bigint>
       ])
 
-      const wethBal = Number(wethBalance) / 1e18
-      const usdcBal = Number(usdcBalance) / 1e6
-      const collateralBal = Number(collateralBalance) / 1e18
-      const borrowBal = Number(borrowBalance) / 1e6
+      const collateralWalletBalance = toCollateralUnits(wethBalance)
+      const baseWalletBalance = toBaseUnits(usdcBalance)
+      const collateralBal = toCollateralUnits(collateralBalance)
+      const borrowBal = toBaseUnits(borrowBalance)
 
-      // Placeholder WETH price - in real app, get from Chainlink
-      const wethPrice = 3000
-      const collateralValue = collateralBal * wethPrice
-      const netWorth = (wethBal + collateralBal) * wethPrice + usdcBal - borrowBal
+      // Placeholder collateral price - in real app, get from Chainlink
+      const collateralPrice = 3000
+      const collateralValue = collateralBal * collateralPrice
+      const netWorth = (collateralWalletBalance + collateralBal) * collateralPrice + baseWalletBalance - borrowBal
       const healthFactor = borrowBal > 0 ? (collateralValue * 0.85) / borrowBal : 999
       const hasPosition = collateralBal > 0 || borrowBal > 0
 
@@ -93,7 +101,7 @@ export function SmartMetrics() {
         netWorth,
         collateralValue,
         borrowValue: borrowBal,
-        wethPrice,
+        collateralPrice,
         hasPosition,
         lastUpdated: Date.now()
       })
@@ -255,20 +263,20 @@ export function SmartMetrics() {
                     <div className="text-xs text-gray-400 mb-2">Position Details</div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-400">WETH Collateral:</span>
-                        <span className="text-white">{(metrics.collateralValue / metrics.wethPrice).toFixed(4)} WETH</span>
+                        <span className="text-gray-400">{COLLATERAL_SYMBOL} Collateral:</span>
+                        <span className="text-white">{(metrics.collateralValue / metrics.collateralPrice).toFixed(4)} {COLLATERAL_SYMBOL}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Collateral Value:</span>
                         <span className="text-white">${metrics.collateralValue.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">USDC Borrowed:</span>
-                        <span className="text-white">${metrics.borrowValue.toFixed(2)}</span>
+                        <span className="text-gray-400">{BASE_TOKEN_SYMBOL} Borrowed:</span>
+                        <span className="text-white">${metrics.borrowValue.toFixed(2)} {BASE_TOKEN_SYMBOL}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">WETH Price:</span>
-                        <span className="text-white">${metrics.wethPrice.toFixed(2)}</span>
+                        <span className="text-gray-400">{COLLATERAL_SYMBOL} Price:</span>
+                        <span className="text-white">${metrics.collateralPrice.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>

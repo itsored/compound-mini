@@ -14,8 +14,17 @@ import { useGuestMode } from "@/lib/guest-mode"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 import { useAccount, useWriteContract } from "wagmi"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
-import { parseUnits } from "viem"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  USDC_ADDRESS,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  parseBaseAmount,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 
 export function RepayForm() {
   const { showSuccess, showError, showLoading, hideLoading } = useFeedback()
@@ -33,9 +42,6 @@ export function RepayForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [repaySuccess, setRepaySuccess] = useState(false)
 
-  const USDC_DECIMALS = 6
-  const USDC_PRICE_USD = 1 // USDC is pegged to USD
-  
   const isTelegram = isTelegramEnv()
 
   const wakeWalletIfNeeded = (): (() => void) | undefined => {
@@ -123,9 +129,9 @@ export function RepayForm() {
         }) as Promise<bigint>,
       ])
 
-      const usdcValue = Number(usdcBal) / 1e6
-      const borrowValue = Number(borrowBal) / 1e6
-      const collateralValue = Number(collateralBal) / 1e18
+      const usdcValue = toBaseUnits(usdcBal)
+      const borrowValue = toBaseUnits(borrowBal)
+      const collateralValue = toCollateralUnits(collateralBal)
       
       // Calculate health factor
       const wethPrice = 3000 // Placeholder
@@ -165,12 +171,12 @@ export function RepayForm() {
     }
 
     if (borrowBalance <= 0) {
-      showError("No Debt", "You have no USDC debt to repay")
+      showError("No Debt", `You have no ${BASE_TOKEN_SYMBOL} debt to repay`)
       return
     }
 
     if (Number.parseFloat(amount) > usdcBalance) {
-      showError("Insufficient Balance", `You only have ${formatCurrency(usdcBalance, "USDC")} available`)
+      showError("Insufficient Balance", `You only have ${formatCurrency(usdcBalance, BASE_TOKEN_SYMBOL)} available`)
       return
     }
 
@@ -180,11 +186,11 @@ export function RepayForm() {
     }
 
     setIsSubmitting(true)
-    showLoading(`Repaying ${amount} USDC...`)
+    showLoading(`Repaying ${amount} ${BASE_TOKEN_SYMBOL}...`)
 
     try {
       if (!address) throw new Error("No account")
-      const rawAmount = parseUnits(amount, USDC_DECIMALS)
+      const rawAmount = parseBaseAmount(amount)
 
       // Network switching removed for stability in Telegram; connector will surface mismatch
 
@@ -197,7 +203,7 @@ export function RepayForm() {
       }) as bigint
 
       if (allowance < rawAmount) {
-        showLoading("Approving USDC...")
+        showLoading(`Approving ${BASE_TOKEN_SYMBOL}...`)
         const stopWake = wakeWalletIfNeeded?.()
         const approveHash = await writeContractAsync({
           address: USDC_ADDRESS,
@@ -209,11 +215,11 @@ export function RepayForm() {
         })
         try { stopWake && stopWake() } catch {}
         await publicClient.waitForTransactionReceipt({ hash: approveHash })
-        showSuccess("Approval successful", "USDC approved for Compound Mini.")
+        showSuccess("Approval successful", `${BASE_TOKEN_SYMBOL} approved for Compound Mini.`)
       }
 
-      // Execute repay (supply USDC to reduce debt)
-      showLoading(`Repaying ${amount} USDC...`)
+      // Execute repay (supply base token to reduce debt)
+      showLoading(`Repaying ${amount} ${BASE_TOKEN_SYMBOL}...`)
       const stopWake2 = wakeWalletIfNeeded?.()
       const repayHash = await writeContractAsync({
         address: COMET_ADDRESS,
@@ -259,7 +265,7 @@ export function RepayForm() {
             </div>
             <h2 className="text-3xl font-bold text-green-400 mb-3">Repay Successful!</h2>
             <p className="text-xl text-white mb-2">
-              You have repaid <span className="font-bold text-green-400">{amount} USDC</span>
+              You have repaid <span className="font-bold text-green-400">{amount} {BASE_TOKEN_SYMBOL}</span>
             </p>
             <p className="text-gray-400 mb-6">
               Interest saved: {borrowApy.toFixed(2)}% APY
@@ -280,7 +286,7 @@ export function RepayForm() {
               <div className="flex justify-between items-center">
                 <span className="text-gray-400">Remaining Debt</span>
                 <span className="text-white font-semibold">
-                  ${newBorrowBalance.toFixed(2)} USDC
+                  ${newBorrowBalance.toFixed(2)} {BASE_TOKEN_SYMBOL}
                 </span>
               </div>
             </div>
@@ -307,11 +313,11 @@ export function RepayForm() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Image src="/usdc-icon.webp" alt="USDC" width={32} height={32} className="rounded-full" />
+              <Image src="/usdc-icon.webp" alt={BASE_TOKEN_SYMBOL} width={32} height={32} className="rounded-full" />
               <div>
                 <p className="text-sm text-gray-300">Current Debt</p>
                 <p className="text-2xl font-bold">
-                  ${borrowBalance.toFixed(2)} USDC
+                  ${borrowBalance.toFixed(2)} {BASE_TOKEN_SYMBOL}
                 </p>
               </div>
             </div>
@@ -325,11 +331,11 @@ export function RepayForm() {
           
           <div className="flex items-center justify-between pt-4 border-t border-red-500/20">
             <div className="flex items-center gap-3">
-              <Image src="/usdc-icon.webp" alt="USDC" width={24} height={24} className="rounded-full" />
+              <Image src="/usdc-icon.webp" alt={BASE_TOKEN_SYMBOL} width={24} height={24} className="rounded-full" />
               <div>
                 <p className="text-sm text-gray-300">Available to Repay</p>
                 <p className="text-lg font-bold">
-                  ${usdcBalance.toFixed(2)} USDC
+                  ${usdcBalance.toFixed(2)} {BASE_TOKEN_SYMBOL}
                 </p>
               </div>
             </div>
@@ -346,16 +352,16 @@ export function RepayForm() {
       {/* Repay Form */}
       <Card className="bg-[#1a1d26] border-[#2a2d36] text-white">
         <CardHeader>
-          <CardTitle className="text-xl">Repay USDC</CardTitle>
+          <CardTitle className="text-xl">Repay {BASE_TOKEN_SYMBOL}</CardTitle>
           <CardDescription className="text-gray-400">
-            Repay your USDC debt to reduce interest costs.
+            Repay your {BASE_TOKEN_SYMBOL} debt to reduce interest costs.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="amount" className="text-gray-300">Amount to Repay</Label>
-              <span className="text-sm text-gray-400">USDC only</span>
+              <span className="text-sm text-gray-400">{BASE_TOKEN_SYMBOL} only</span>
             </div>
             <div className="relative">
               <Input
@@ -367,8 +373,8 @@ export function RepayForm() {
                 className="bg-[#252836] border-[#2a2d36] pr-20 h-14 text-lg"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <Image src="/usdc-icon.webp" alt="USDC" width={20} height={20} className="rounded-full" />
-                <span className="text-white font-semibold">USDC</span>
+                <Image src="/usdc-icon.webp" alt={BASE_TOKEN_SYMBOL} width={20} height={20} className="rounded-full" />
+                <span className="text-white font-semibold">{BASE_TOKEN_SYMBOL}</span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -398,7 +404,7 @@ export function RepayForm() {
             </div>
             <div className="flex justify-between text-sm text-gray-300">
               <span>Remaining Debt</span>
-              <span>${newBorrowBalance.toFixed(2)} USDC</span>
+              <span>${newBorrowBalance.toFixed(2)} {BASE_TOKEN_SYMBOL}</span>
             </div>
           </div>
 
@@ -415,7 +421,7 @@ export function RepayForm() {
             ) : (
               <>
                 <ArrowDownLeft className="mr-2 h-5 w-5" />
-                Repay USDC
+                Repay {BASE_TOKEN_SYMBOL}
               </>
             )}
           </Button>

@@ -4,7 +4,16 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAccount } from "wagmi"
 import { useGuestMode } from "@/lib/guest-mode"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  USDC_ADDRESS,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 import { RatesDashboard } from "./rates-dashboard"
@@ -25,26 +34,9 @@ export function Dashboard() {
 	const [baseSupplied, setBaseSupplied] = useState<bigint>(BigInt(0))
 	const [wethWalletBalance, setWethWalletBalance] = useState<bigint>(BigInt(0))
 	const [usdcWalletBalance, setUsdcWalletBalance] = useState<bigint>(BigInt(0))
-	const [baseSymbol, setBaseSymbol] = useState<string>("USDC")
-	const [baseDecimals, setBaseDecimals] = useState<number>(6)
 
 	useEffect(() => {
 		setMounted(true)
-	}, [])
-
-	useEffect(() => {
-		async function loadBaseTokenMeta() {
-			try {
-				const baseToken = (await publicClient.readContract({ address: COMET_ADDRESS, abi: cometAbi as any, functionName: "baseToken", args: [] })) as `0x${string}`
-				const [dec, sym] = (await Promise.all([
-					publicClient.readContract({ address: baseToken, abi: erc20Abi as any, functionName: "decimals", args: [] }),
-					publicClient.readContract({ address: baseToken, abi: erc20Abi as any, functionName: "symbol", args: [] }),
-				])) as [number, string]
-				setBaseDecimals(Number(dec))
-				setBaseSymbol(sym)
-			} catch {}
-		}
-		loadBaseTokenMeta()
 	}, [])
 
 	useEffect(() => {
@@ -103,33 +95,33 @@ export function Dashboard() {
 										<div className="grid grid-cols-2 gap-3 mb-3">
 											<div className="bg-bg-tertiary/60 border border-border-primary p-3 rounded-lg">
 												<div className="flex items-center gap-2 mb-1">
-													<Image src="/weth-icon.png" alt="WETH" width={16} height={16} className="rounded-full" />
-													<div className="text-xs text-text-secondary">WETH Wallet</div>
+													<Image src="/weth-icon.png" alt={COLLATERAL_SYMBOL} width={16} height={16} className="rounded-full" />
+													<div className="text-xs text-text-secondary">{COLLATERAL_SYMBOL} Wallet</div>
 												</div>
-												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : Number(wethWalletBalance) / 1e18}</div>
+												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : toCollateralUnits(wethWalletBalance)}</div>
 											</div>
 											<div className="bg-bg-tertiary/60 border border-border-primary p-3 rounded-lg">
 												<div className="flex items-center gap-2 mb-1">
-													<Image src="/usdc-icon.webp" alt="USDC" width={16} height={16} className="rounded-full" />
-													<div className="text-xs text-text-secondary">USDC Wallet</div>
+													<Image src="/usdc-icon.webp" alt={BASE_TOKEN_SYMBOL} width={16} height={16} className="rounded-full" />
+													<div className="text-xs text-text-secondary">{BASE_TOKEN_SYMBOL} Wallet</div>
 												</div>
-												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : Number(usdcWalletBalance) / 1e6}</div>
+												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : toBaseUnits(usdcWalletBalance)}</div>
 											</div>
 										</div>
 										<div className="grid grid-cols-2 gap-3 mb-3">
 											<div className="bg-bg-tertiary/60 border border-border-primary p-3 rounded-lg">
 												<div className="flex items-center gap-2 mb-1">
-													<Image src="/weth-icon.png" alt="WETH" width={16} height={16} className="rounded-full" />
-													<div className="text-xs text-text-secondary">WETH Collateral</div>
+													<Image src="/weth-icon.png" alt={COLLATERAL_SYMBOL} width={16} height={16} className="rounded-full" />
+													<div className="text-xs text-text-secondary">{COLLATERAL_SYMBOL} Collateral</div>
 												</div>
-												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : Number(collateralWeth) / 1e18}</div>
+												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : toCollateralUnits(collateralWeth)}</div>
 											</div>
 											<div className="bg-bg-tertiary/60 border border-border-primary p-3 rounded-lg">
 												<div className="flex items-center gap-2 mb-1">
-													<Image src="/usdc-icon.webp" alt="USDC" width={16} height={16} className="rounded-full" />
-													<div className="text-xs text-text-secondary">USDC Borrowed</div>
+													<Image src="/usdc-icon.webp" alt={BASE_TOKEN_SYMBOL} width={16} height={16} className="rounded-full" />
+													<div className="text-xs text-text-secondary">{BASE_TOKEN_SYMBOL} Borrowed</div>
 												</div>
-												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : Number(baseBorrowed) / 1e6}</div>
+												<div className="text-lg font-semibold text-text-primary">{guest ? 0 : toBaseUnits(baseBorrowed)}</div>
 											</div>
 										</div>
 										{/* Show the supplied section and Defi callout only for guest/tour when all zero, otherwise hide in guest */}
@@ -137,7 +129,7 @@ export function Dashboard() {
 											<div className="bg-bg-tertiary/60 border border-border-primary p-3 rounded-lg">
 												<div className="text-sm text-text-primary mb-2">🚀 Ready to start DeFi!</div>
 												<div className="text-xs text-text-tertiary">
-													You have {guest ? 0 : Number(wethWalletBalance) / 1e18} WETH available. Use the <strong>Supply</strong> page to deposit WETH as collateral, then <strong>Borrow</strong> USDC against your collateral.
+													You have {guest ? 0 : toCollateralUnits(wethWalletBalance)} {COLLATERAL_SYMBOL} available. Use the <strong>Supply</strong> page to deposit {COLLATERAL_SYMBOL} as collateral, then <strong>Borrow</strong> {BASE_TOKEN_SYMBOL} against your collateral.
 												</div>
 											</div>
 										)}

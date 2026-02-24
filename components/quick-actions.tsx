@@ -1,19 +1,26 @@
 "use client"
 
 import { useAccount } from "wagmi"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { 
   PiggyBank, 
   ArrowDownRight, 
   ArrowUpRight, 
-  TrendingUp,
   Wallet,
   ArrowRight
 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { publicClient, COMET_ADDRESS, WETH_ADDRESS, USDC_ADDRESS } from "@/lib/comet-onchain"
+import {
+  publicClient,
+  COMET_ADDRESS,
+  WETH_ADDRESS,
+  USDC_ADDRESS,
+  BASE_TOKEN_SYMBOL,
+  COLLATERAL_SYMBOL,
+  toBaseUnits,
+  toCollateralUnits,
+} from "@/lib/comet-onchain"
 import cometAbi from "@/lib/abis/comet.json"
 import erc20Abi from "@/lib/abis/erc20.json"
 import Image from "next/image"
@@ -32,8 +39,8 @@ interface QuickAction {
 export function QuickActions() {
   const { address, isConnected } = useAccount()
   const [userPosition, setUserPosition] = useState<{
-    wethBalance: number
-    usdcBalance: number
+    collateralBalance: number
+    baseBalance: number
     collateralValue: number
     borrowValue: number
     hasPosition: boolean
@@ -78,15 +85,15 @@ export function QuickActions() {
         }) as Promise<bigint>
       ])
 
-      const wethBal = Number(wethBalance) / 1e18
-      const usdcBal = Number(usdcBalance) / 1e6
-      const collateralBal = Number(collateralBalance) / 1e18
-      const borrowBal = Number(borrowBalance) / 1e6
+      const collateralWalletBalance = toCollateralUnits(wethBalance)
+      const baseWalletBalance = toBaseUnits(usdcBalance)
+      const collateralBal = toCollateralUnits(collateralBalance)
+      const borrowBal = toBaseUnits(borrowBalance)
       const hasPosition = collateralBal > 0 || borrowBal > 0
 
       setUserPosition({
-        wethBalance: wethBal,
-        usdcBalance: usdcBal,
+        collateralBalance: collateralWalletBalance,
+        baseBalance: baseWalletBalance,
         collateralValue: collateralBal,
         borrowValue: borrowBal,
         hasPosition
@@ -130,11 +137,11 @@ export function QuickActions() {
     const actions: QuickAction[] = []
 
     // Supply Action
-    if (userPosition.wethBalance > 0) {
+    if (userPosition.collateralBalance > 0) {
       actions.push({
         id: "supply",
-        title: "Supply WETH",
-        subtitle: `${userPosition.wethBalance.toFixed(4)} WETH available`,
+        title: `Supply ${COLLATERAL_SYMBOL}`,
+        subtitle: `${userPosition.collateralBalance.toFixed(4)} ${COLLATERAL_SYMBOL} available`,
         icon: <PiggyBank className="h-6 w-6" />,
         action: () => window.location.href = "/supply",
         disabled: false,
@@ -149,7 +156,7 @@ export function QuickActions() {
         icon: <PiggyBank className="h-6 w-6" />,
         action: () => window.location.href = "/supply",
         disabled: true,
-        badge: "No WETH",
+        badge: `No ${COLLATERAL_SYMBOL}`,
         badgeVariant: "secondary"
       })
     }
@@ -158,7 +165,7 @@ export function QuickActions() {
     if (userPosition.hasPosition && userPosition.collateralValue > 0) {
       actions.push({
         id: "borrow",
-        title: "Borrow USDC",
+        title: `Borrow ${BASE_TOKEN_SYMBOL}`,
         subtitle: "Borrow against your collateral",
         icon: <ArrowDownRight className="h-6 w-6" />,
         action: () => window.location.href = "/borrow",
@@ -167,7 +174,7 @@ export function QuickActions() {
     } else {
       actions.push({
         id: "borrow",
-        title: "Borrow USDC",
+        title: `Borrow ${BASE_TOKEN_SYMBOL}`,
         subtitle: "Supply collateral first",
         icon: <ArrowDownRight className="h-6 w-6" />,
         action: () => window.location.href = "/borrow",
@@ -182,7 +189,7 @@ export function QuickActions() {
       actions.push({
         id: "withdraw",
         title: "Withdraw",
-        subtitle: `${userPosition.collateralValue.toFixed(4)} WETH collateral`,
+        subtitle: `${userPosition.collateralValue.toFixed(4)} ${COLLATERAL_SYMBOL} collateral`,
         icon: <ArrowUpRight className="h-6 w-6" />,
         action: () => window.location.href = "/withdraw",
         disabled: false
@@ -257,22 +264,22 @@ export function QuickActions() {
               <div className="flex items-center gap-1">
                 <Image 
                   src="/weth-icon.png" 
-                  alt="WETH" 
+                  alt={COLLATERAL_SYMBOL} 
                   width={16} 
                   height={16} 
                   className="rounded-full"
                 />
-                <span className="text-white">{userPosition.wethBalance.toFixed(4)}</span>
+                <span className="text-white">{userPosition.collateralBalance.toFixed(4)}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Image 
                   src="/usdc-icon.webp" 
-                  alt="USDC" 
+                  alt={BASE_TOKEN_SYMBOL} 
                   width={16} 
                   height={16} 
                   className="rounded-full"
                 />
-                <span className="text-white">{userPosition.usdcBalance.toFixed(2)}</span>
+                <span className="text-white">{userPosition.baseBalance.toFixed(2)}</span>
               </div>
             </div>
           </div>
