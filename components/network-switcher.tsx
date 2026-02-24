@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Network, WifiOff, CheckCircle, AlertCircle } from "lucide-react"
+import { Network, WifiOff, CheckCircle, AlertCircle, ChevronDown } from "lucide-react"
 import { useAccount, useChainId, useSwitchChain } from "wagmi"
 import {
   getAvailableChains,
@@ -39,6 +39,7 @@ export function NetworkSwitcher({ className = "", variant = "full" }: NetworkSwi
   const [isSwitchingWallet, setIsSwitchingWallet] = useState(false)
   const [pendingWalletSwitchChainId, setPendingWalletSwitchChainId] = useState<number | null>(null)
   const [switchError, setSwitchError] = useState<string | null>(null)
+  const [isCompactOpen, setIsCompactOpen] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -103,6 +104,13 @@ export function NetworkSwitcher({ className = "", variant = "full" }: NetworkSwi
     })
     setSwitchError(null)
   }, [isConnected, walletChainId, selection.chainKey, selection.marketKey, applySelection, pendingWalletSwitchChainId])
+
+  useEffect(() => {
+    if (variant !== "compact") return
+    if (isDirty || (!!isConnected && !isCorrectNetwork) || !!switchError) {
+      setIsCompactOpen(true)
+    }
+  }, [variant, isDirty, isConnected, isCorrectNetwork, switchError])
 
   const onApplySelection = async () => {
     if (!isDirty) return
@@ -189,96 +197,115 @@ export function NetworkSwitcher({ className = "", variant = "full" }: NetworkSwi
   if (variant === "compact") {
     return (
       <Card className={`compound-card ${className}`}>
-        <CardContent className="p-3 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <CardContent className="p-3">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2"
+            onClick={() => setIsCompactOpen((prev) => !prev)}
+            aria-expanded={isCompactOpen}
+            aria-label="Toggle network settings"
+          >
+            <div className="flex min-w-0 items-center gap-2">
               <Network className="h-4 w-4 text-text-tertiary" />
               <span className="text-sm font-medium text-text-primary">Network</span>
+              <span className="truncate text-xs text-text-muted">
+                {selectedChain.name} / {marketKey.toUpperCase()}
+              </span>
             </div>
-            <Badge variant="outline" className={selectedConfig.isTestnet ? "text-yellow-300 border-yellow-700" : "text-green-300 border-green-700"}>
-              {selectedConfig.isTestnet ? "Testnet" : "Mainnet"}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className={selectedConfig.isTestnet ? "text-yellow-300 border-yellow-700" : "text-green-300 border-green-700"}>
+                {selectedConfig.isTestnet ? "Testnet" : "Mainnet"}
+              </Badge>
+              <ChevronDown className={`h-4 w-4 text-text-tertiary transition-transform ${isCompactOpen ? "rotate-180" : ""}`} />
+            </div>
+          </button>
+
+          <div className="mt-2 flex items-center justify-between gap-2 text-xs">
+            <div className={`truncate ${status.color}`}>{status.message}</div>
+            {isDirty && <span className="text-[11px] text-compound-warning-400">Unsaved</span>}
           </div>
 
-          <div className="space-y-2">
-            <div>
-              <div className="mb-1 text-[11px] text-text-muted">Chain</div>
-              <select
-                className="w-full rounded-md bg-bg-tertiary border border-border-primary p-2 text-xs"
-                value={chainKey}
-                onChange={(e) => {
-                  const nextChain = e.target.value as ChainKey
-                  const nextDefaultMarket = getChainConfig(nextChain).defaultMarket
-                  const nextDefaultCollateral = getMarketConfig(nextChain, nextDefaultMarket).defaultCollateralSymbol
-                  setChainKey(nextChain)
-                  setMarketKey(nextDefaultMarket)
-                  setCollateralSymbol(nextDefaultCollateral)
-                }}
-              >
-                {availableChains.map((key) => {
-                  const chain = getChainConfig(key)
-                  return (
-                    <option key={key} value={key}>
-                      {chain.name}
-                    </option>
-                  )
-                })}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
+          <div className={`overflow-hidden transition-all duration-200 ${isCompactOpen ? "mt-3 max-h-[1200px] opacity-100" : "max-h-0 opacity-0"}`}>
+            <div className="space-y-3">
               <div>
-                <div className="mb-1 text-[11px] text-text-muted">Market</div>
+                <div className="mb-1 text-[11px] text-text-muted">Chain</div>
                 <select
                   className="w-full rounded-md bg-bg-tertiary border border-border-primary p-2 text-xs"
-                  value={marketKey}
+                  value={chainKey}
                   onChange={(e) => {
-                    const nextMarket = e.target.value
-                    setMarketKey(nextMarket)
-                    setCollateralSymbol(getMarketConfig(chainKey, nextMarket).defaultCollateralSymbol)
+                    const nextChain = e.target.value as ChainKey
+                    const nextDefaultMarket = getChainConfig(nextChain).defaultMarket
+                    const nextDefaultCollateral = getMarketConfig(nextChain, nextDefaultMarket).defaultCollateralSymbol
+                    setChainKey(nextChain)
+                    setMarketKey(nextDefaultMarket)
+                    setCollateralSymbol(nextDefaultCollateral)
                   }}
                 >
-                  {availableMarkets.map((key) => (
-                    <option key={key} value={key}>
-                      {key}
-                    </option>
-                  ))}
+                  {availableChains.map((key) => {
+                    const chain = getChainConfig(key)
+                    return (
+                      <option key={key} value={key}>
+                        {chain.name}
+                      </option>
+                    )
+                  })}
                 </select>
               </div>
 
-              <div>
-                <div className="mb-1 text-[11px] text-text-muted">Collateral</div>
-                <select
-                  className="w-full rounded-md bg-bg-tertiary border border-border-primary p-2 text-xs"
-                  value={collateralSymbol}
-                  onChange={(e) => setCollateralSymbol(e.target.value)}
-                >
-                  {availableCollaterals.map((symbol) => (
-                    <option key={symbol} value={symbol}>
-                      {symbol}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="mb-1 text-[11px] text-text-muted">Market</div>
+                  <select
+                    className="w-full rounded-md bg-bg-tertiary border border-border-primary p-2 text-xs"
+                    value={marketKey}
+                    onChange={(e) => {
+                      const nextMarket = e.target.value
+                      setMarketKey(nextMarket)
+                      setCollateralSymbol(getMarketConfig(chainKey, nextMarket).defaultCollateralSymbol)
+                    }}
+                  >
+                    {availableMarkets.map((key) => (
+                      <option key={key} value={key}>
+                        {key}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="mb-1 text-[11px] text-text-muted">Collateral</div>
+                  <select
+                    className="w-full rounded-md bg-bg-tertiary border border-border-primary p-2 text-xs"
+                    value={collateralSymbol}
+                    onChange={(e) => setCollateralSymbol(e.target.value)}
+                  >
+                    {availableCollaterals.map((symbol) => (
+                      <option key={symbol} value={symbol}>
+                        {symbol}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className={`text-xs leading-snug break-words ${status.color}`}>{status.message}</div>
+                <Button size="sm" className="w-full sm:w-auto" onClick={onApplySelection} disabled={isApplying || !isDirty}>
+                  {isApplying ? "Applying..." : isDirty ? "Apply" : "Applied"}
+                </Button>
+              </div>
+
+              {!isCorrectNetwork && isConnected && (
+                <div className="bg-compound-warning-900/20 border border-compound-warning-700/30 p-2 rounded-lg text-xs text-text-tertiary">
+                  <div className="mb-2 break-words">Wallet chain: {walletChainId ?? "unknown"} • Selected: {selectedChain.chainId}</div>
+                  <Button size="sm" variant="outline" className="h-7 w-full text-xs sm:w-auto" onClick={onSwitchWallet} disabled={isSwitchingWallet}>
+                    {isSwitchingWallet ? "Switching..." : `Switch Wallet to ${selectedChain.name}`}
+                  </Button>
+                  {switchError && <div className="mt-2 text-[11px] text-red-300">{switchError}</div>}
+                </div>
+              )}
             </div>
           </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className={`text-xs leading-snug break-words ${status.color}`}>{status.message}</div>
-            <Button size="sm" className="w-full sm:w-auto" onClick={onApplySelection} disabled={isApplying || !isDirty}>
-              {isApplying ? "Applying..." : isDirty ? "Apply" : "Applied"}
-            </Button>
-          </div>
-
-          {!isCorrectNetwork && isConnected && (
-            <div className="bg-compound-warning-900/20 border border-compound-warning-700/30 p-2 rounded-lg text-xs text-text-tertiary">
-              <div className="mb-2 break-words">Wallet chain: {walletChainId ?? "unknown"} • Selected: {selectedChain.chainId}</div>
-              <Button size="sm" variant="outline" className="h-7 w-full text-xs sm:w-auto" onClick={onSwitchWallet} disabled={isSwitchingWallet}>
-                {isSwitchingWallet ? "Switching..." : `Switch Wallet to ${selectedChain.name}`}
-              </Button>
-              {switchError && <div className="mt-2 text-[11px] text-red-300">{switchError}</div>}
-            </div>
-          )}
         </CardContent>
       </Card>
     )

@@ -30,3 +30,9 @@ onchain/node_modules/
 onchain/artifacts/
 onchain/cache/
 onchain/.env
+
+# local/editor artifacts
+*.swp
+
+# internal docs/data not for remote
+BETA_TEST_CONVERSATION.json
