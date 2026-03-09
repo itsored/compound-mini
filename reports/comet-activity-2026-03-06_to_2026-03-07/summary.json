@@ -1,0 +1,28 @@
+{
+  "generated_at_utc": "2026-03-07T20:22:02.394Z",
+  "window_days": 1,
+  "window_start_utc": "2026-03-06T20:20:52.248Z",
+  "window_end_utc": "2026-03-07T20:20:52.248Z",
+  "included_chain_keys": [
+    "mainnet"
+  ],
+  "failed_chains": [],
+  "total_transactions": 209,
+  "total_unique_wallets": 88,
+  "top100_wallet_count": 88,
+  "total_eoa_wallets": 0,
+  "top100_eoa_wallet_count": 0,
+  "chain_summaries": [
+    {
+      "chain_key": "mainnet",
+      "chain_name": "Ethereum Mainnet",
+      "chain_id": 1,
+      "is_testnet": false,
+      "rpc_url": "https://ethereum.publicnode.com",
+      "start_block": "24600767",
+      "latest_block": "24607923",
+      "transaction_count": 209,
+      "unique_wallet_count": 88
+    }
+  ]
+}

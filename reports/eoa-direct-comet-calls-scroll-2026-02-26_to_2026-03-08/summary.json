@@ -1,0 +1,11 @@
+{
+  "generated_at_utc": "2026-03-08T11:12:57.305Z",
+  "window_start_utc": "2026-02-26T11:12:14.953Z",
+  "window_end_utc": "2026-03-08T11:12:14.953Z",
+  "total_eoa_wallets": 78,
+  "total_transactions": 87,
+  "wallets_by_chain": {
+    "scroll": 78
+  },
+  "failures": []
+}

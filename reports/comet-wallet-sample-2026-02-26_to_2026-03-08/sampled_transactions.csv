@@ -1,0 +1,1 @@
+chain_key,chain_name,chain_id,is_testnet,timestamp_utc,block_number,wallet,wallet_is_contract,wallet_roles,tx_hash,tx_to,tx_input_selector,direct_to_comet,decoded_comet_function,decoded_comet_asset_symbol,decoded_comet_asset_address,market_keys,market_names,comet_addresses,event_names,actor_event_names,explorer_url

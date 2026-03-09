@@ -1,0 +1,17 @@
+{
+  "generated_at_utc": "2026-03-08T11:10:23.540Z",
+  "window_start_utc": "2026-02-26T11:10:09.433Z",
+  "window_end_utc": "2026-03-08T11:10:09.433Z",
+  "total_eoa_wallets": 21,
+  "total_transactions": 38,
+  "wallets_by_chain": {
+    "linea": 21
+  },
+  "failures": [
+    {
+      "chain_key": "linea",
+      "chain_name": "Linea",
+      "message": "Max calls per sec rate limit reached (3/sec)"
+    }
+  ]
+}

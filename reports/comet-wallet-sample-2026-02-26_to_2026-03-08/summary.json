@@ -1,0 +1,16 @@
+{
+  "generated_at_utc": "2026-03-08T09:25:42.784Z",
+  "window_start_utc": "2026-02-26T09:23:47.675Z",
+  "window_end_utc": "2026-03-08T09:23:47.675Z",
+  "target_total_wallets": 150,
+  "selected_wallet_count": 0,
+  "selected_transaction_count": 0,
+  "selected_wallets_by_chain": {},
+  "quotas": {
+    "sepolia": 33
+  },
+  "chain_candidate_counts": {
+    "sepolia": 0
+  },
+  "failures": []
+}

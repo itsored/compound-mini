@@ -1,0 +1,76 @@
+{
+  "generated_at_utc": "2026-03-08T11:15:02.515Z",
+  "window_start_utc": "2026-02-26T11:30:09.000Z",
+  "window_end_utc": "2026-03-08T10:31:57.000Z",
+  "total_unique_wallets": 181,
+  "total_transactions": 316,
+  "wallets_by_chain": {
+    "scroll": 78,
+    "polygon": 62,
+    "linea": 39,
+    "sepolia": 3
+  },
+  "cross_chain_wallet_count": 1,
+  "source_dirs": [
+    "/Users/Shared/Nash/compound-mini/reports/eoa-direct-comet-calls-scroll-2026-02-26_to_2026-03-08",
+    "/Users/Shared/Nash/compound-mini/reports/eoa-direct-comet-calls-polygon-2026-02-26_to_2026-03-08",
+    "/Users/Shared/Nash/compound-mini/reports/eoa-direct-comet-calls-linea-2026-02-26_to_2026-03-08",
+    "/Users/Shared/Nash/compound-mini/reports/eoa-direct-comet-calls-sepolia-2026-02-26_to_2026-03-08"
+  ],
+  "source_summaries": [
+    {
+      "dir": "/Users/Shared/Nash/compound-mini/reports/eoa-direct-comet-calls-scroll-2026-02-26_to_2026-03-08",
+      "generated_at_utc": "2026-03-08T11:12:57.305Z",
+      "window_start_utc": "2026-02-26T11:12:14.953Z",
+      "window_end_utc": "2026-03-08T11:12:14.953Z",
+      "total_eoa_wallets": 78,
+      "total_transactions": 87,
+      "wallets_by_chain": {
+        "scroll": 78
+      },
+      "failures": []
+    },
+    {
+      "dir": "/Users/Shared/Nash/compound-mini/reports/eoa-direct-comet-calls-polygon-2026-02-26_to_2026-03-08",
+      "generated_at_utc": "2026-03-08T11:13:46.987Z",
+      "window_start_utc": "2026-02-26T11:13:09.734Z",
+      "window_end_utc": "2026-03-08T11:13:09.734Z",
+      "total_eoa_wallets": 62,
+      "total_transactions": 116,
+      "wallets_by_chain": {
+        "polygon": 62
+      },
+      "failures": []
+    },
+    {
+      "dir": "/Users/Shared/Nash/compound-mini/reports/eoa-direct-comet-calls-linea-2026-02-26_to_2026-03-08",
+      "generated_at_utc": "2026-03-08T11:11:36.941Z",
+      "window_start_utc": "2026-02-26T11:11:07.440Z",
+      "window_end_utc": "2026-03-08T11:11:07.440Z",
+      "total_eoa_wallets": 39,
+      "total_transactions": 103,
+      "wallets_by_chain": {
+        "linea": 39
+      },
+      "failures": []
+    },
+    {
+      "dir": "/Users/Shared/Nash/compound-mini/reports/eoa-direct-comet-calls-sepolia-2026-02-26_to_2026-03-08",
+      "generated_at_utc": "2026-03-08T11:11:53.953Z",
+      "window_start_utc": "2026-02-26T11:11:49.420Z",
+      "window_end_utc": "2026-03-08T11:11:49.420Z",
+      "total_eoa_wallets": 3,
+      "total_transactions": 10,
+      "wallets_by_chain": {
+        "sepolia": 3
+      },
+      "failures": [
+        {
+          "chain_key": "sepolia",
+          "chain_name": "Sepolia Testnet",
+          "message": "Error"
+        }
+      ]
+    }
+  ]
+}

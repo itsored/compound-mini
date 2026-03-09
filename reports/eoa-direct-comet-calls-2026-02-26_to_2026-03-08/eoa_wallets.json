@@ -1,0 +1,418 @@
+[
+  {
+    "rank_first_seen": 1,
+    "wallet": "0x20f9468228a4b69b84b01e621363f58c93ad0823",
+    "first_seen_utc": "2026-02-26T17:36:24.000Z",
+    "last_seen_utc": "2026-02-26T17:40:46.000Z",
+    "tx_count": 2,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x1406f776c520e44eeef2107fbbdf2e1708d74ae6df428ac761f35c79df91f086",
+      "0xcbd3eb537cd7a80cfeb1b8181ca3d9e8f7620104679adcfc3a4a74d14cb192d0"
+    ]
+  },
+  {
+    "rank_first_seen": 2,
+    "wallet": "0xa5c5956acd8156d457736bb537f6ab4e396e62f1",
+    "first_seen_utc": "2026-02-27T17:33:00.000Z",
+    "last_seen_utc": "2026-03-08T05:34:35.000Z",
+    "tx_count": 4,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x01bacc12b56b7f5a21863b8431ea68a83195246278e1d0043830a490596fb005",
+      "0x26aea3b7755f446629271824ade5d23885d2e162fe1498c4f511273700e1a887",
+      "0xf077856b0554d08c819d16b2cf49f9ff5c981690bd239311193d8aaf3b20ff19",
+      "0x9016089b89c6d19a702495f16c0a4550b0b2f6c0947964f48846184c975b1765"
+    ]
+  },
+  {
+    "rank_first_seen": 3,
+    "wallet": "0x4f6872a24ff019550048668094da427dcd49723a",
+    "first_seen_utc": "2026-02-27T17:34:17.000Z",
+    "last_seen_utc": "2026-03-08T05:32:37.000Z",
+    "tx_count": 7,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x84e50d84b1235ee6b4f0d4c679e91ec1521ef4f49c4a42a8e9b5a669b10cb686",
+      "0xfdedc696aa0cc41a5325fb37833a20e1b41a9e27c759159d258f99326b35d032",
+      "0xb94036d86950ab96cc08c7e8122f2ba5fa93b2c80cac52f034b849de8922ea9a",
+      "0x3e15cb39f5184232174bf33e26b81092f889680f905d5e429b644fcfca5c39ed",
+      "0x564299737da0c90917d7482534d3e15fc49a332fc5e8dc00c5010aa1e4001871",
+      "0xaa03d3c08497d5c4dbe8a3361f3e34afeb42fb2f5bf42339391d1d38bf7ed8d1",
+      "0x63a580c9b6ff5331467462da9f12f9dba505d9486671881b10694c059c52033f"
+    ]
+  },
+  {
+    "rank_first_seen": 4,
+    "wallet": "0xfef37be95be608ed7277f777d8ba877ad70df125",
+    "first_seen_utc": "2026-02-28T06:09:47.000Z",
+    "last_seen_utc": "2026-02-28T06:09:47.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x38fe1aac60619275c14840901fbc50094a30e326a6c2fa702ec5c17dcd780c2e"
+    ]
+  },
+  {
+    "rank_first_seen": 5,
+    "wallet": "0x76914c986ca7c04c7bdcb3e7f02a67f71e2a9eec",
+    "first_seen_utc": "2026-02-28T09:09:41.000Z",
+    "last_seen_utc": "2026-03-07T17:07:41.000Z",
+    "tx_count": 3,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x38a6da5bf1203654e831ea0e4865138a916cd7b275d5716c9e9198eddbac7779",
+      "0x651a84df320238a9ec16c7066f680087a101fc9cf74d2b62c12f965de88a9525",
+      "0xc48f2ea326f4c02994b7cb20e268675483ef87f0fb9875f391f184ce6f8bc0fb"
+    ]
+  },
+  {
+    "rank_first_seen": 6,
+    "wallet": "0x3da9c0de73a8b16dbf7e9ba884ccc11a6a50ef3a",
+    "first_seen_utc": "2026-03-01T08:34:40.000Z",
+    "last_seen_utc": "2026-03-01T08:34:40.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0xbc7eb73e7cc0e01b77479787b6c8d1c27a7d89fb7620f31c085704a46b7e6e5f"
+    ]
+  },
+  {
+    "rank_first_seen": 7,
+    "wallet": "0xff0a3568934fa33ed2e0371bb33fb85f866b4ba1",
+    "first_seen_utc": "2026-03-01T14:00:39.000Z",
+    "last_seen_utc": "2026-03-01T14:06:11.000Z",
+    "tx_count": 3,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0xa4cb974e54d7bc237e64c013a91419db345db211eabf9c52bfbbb0312a38c1ff",
+      "0x2be10f6869d0866c9132cdc56ed16cf587d492c666606d8f4e5f1f8c7f76af90",
+      "0x9d4088c92b2426608b67c6537a23ba06f2b8ec5edee145062009a702bb204883"
+    ]
+  },
+  {
+    "rank_first_seen": 8,
+    "wallet": "0xf17f53eda987b3f831d32f99beee467512e130d0",
+    "first_seen_utc": "2026-03-01T15:06:23.000Z",
+    "last_seen_utc": "2026-03-01T15:06:23.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0xd746b6247108fbe12e0782640b6916fd6fc4a682fa93391d0101acda80ac3071"
+    ]
+  },
+  {
+    "rank_first_seen": 9,
+    "wallet": "0xdccdad4742d8bf3ecf142a01948d1bf2718b3b2a",
+    "first_seen_utc": "2026-03-01T15:30:53.000Z",
+    "last_seen_utc": "2026-03-01T15:30:53.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x599eee9fc7bde47339466fe4fe9189134227a06ebb2760f6fc85bf010f9fff15"
+    ]
+  },
+  {
+    "rank_first_seen": 10,
+    "wallet": "0xcdfe9b00c5fdcbe23ffcb8a9330458ebc6fe79a7",
+    "first_seen_utc": "2026-03-01T16:07:31.000Z",
+    "last_seen_utc": "2026-03-01T16:07:31.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0xbfd7425d8351f359530754a68a784d1985c133836d13f60f28c5bb01b8cce026"
+    ]
+  },
+  {
+    "rank_first_seen": 11,
+    "wallet": "0x064eada64c3b551acfe589dea6c8d383a1cb6830",
+    "first_seen_utc": "2026-03-01T16:16:08.000Z",
+    "last_seen_utc": "2026-03-01T16:16:08.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x5285466edc227e3059163c8dd8de879016bde03b883b0668ff04da0c1358a7ca"
+    ]
+  },
+  {
+    "rank_first_seen": 12,
+    "wallet": "0xa1bda5e800bec162edf56a5f3783afd5b2bd74e8",
+    "first_seen_utc": "2026-03-02T07:07:55.000Z",
+    "last_seen_utc": "2026-03-02T07:07:55.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x9389f75b5a45657e9554b1da43d288b5005d1cc5179294b87414ecf8ef1f121c"
+    ]
+  },
+  {
+    "rank_first_seen": 13,
+    "wallet": "0xbe3d2869672d485660b34fd751e85c47ca62f016",
+    "first_seen_utc": "2026-03-02T15:20:36.000Z",
+    "last_seen_utc": "2026-03-02T15:20:36.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x8f7d97302ab7d859508b4660380d8c7a61b50cb38d3a2aecfb51ca5ba086f2bc"
+    ]
+  },
+  {
+    "rank_first_seen": 14,
+    "wallet": "0xa057a3d6efdc677741a4ac786e89b9b6102eebb6",
+    "first_seen_utc": "2026-03-02T16:37:52.000Z",
+    "last_seen_utc": "2026-03-02T16:37:52.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0xc3e258f31cd2a41637d84dc9a9fb0d9a9e887539404769ae5bcea99879af5b12"
+    ]
+  },
+  {
+    "rank_first_seen": 15,
+    "wallet": "0x7f3f1cd6cc2690931fb98bc0d1a54eff4f1ba48f",
+    "first_seen_utc": "2026-03-03T01:05:57.000Z",
+    "last_seen_utc": "2026-03-05T02:00:45.000Z",
+    "tx_count": 2,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x05111a79329692268c6c80a41ce485859dfc86c8ae77760c0fda6bd5a5788e55",
+      "0xafef2270fba3e6910b1e85ec20ae0fc9314d2a9fa3f1639d446826a9396a4fef"
+    ]
+  },
+  {
+    "rank_first_seen": 16,
+    "wallet": "0x698fb8493d5f5fa64ce9fe1c2e2a72c0d7d7ee40",
+    "first_seen_utc": "2026-03-04T05:25:12.000Z",
+    "last_seen_utc": "2026-03-04T05:25:12.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0xf236c2f2e1d378ef323f1b687cb2a3cef009c288fc9f3de8046e48443cedac3c"
+    ]
+  },
+  {
+    "rank_first_seen": 17,
+    "wallet": "0xc8caec7ae8b36676c5c60d11423c6dac8343eb19",
+    "first_seen_utc": "2026-03-04T13:43:02.000Z",
+    "last_seen_utc": "2026-03-04T13:43:02.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x50a982bac76142a955b9115e9927d6485a8b7f9de992da4d489a02831e5c9824"
+    ]
+  },
+  {
+    "rank_first_seen": 18,
+    "wallet": "0x67c1b9040f2574c84f2ad7ac6ee50856003e3897",
+    "first_seen_utc": "2026-03-05T18:57:57.000Z",
+    "last_seen_utc": "2026-03-05T18:57:57.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x8e6c13cac0812d68e2f612b0095abfc8397f11fd45f9bea19bc9537d47203e86"
+    ]
+  },
+  {
+    "rank_first_seen": 19,
+    "wallet": "0xd54cf7019d0c3159807ccf29760b68de0aa43040",
+    "first_seen_utc": "2026-03-06T00:13:32.000Z",
+    "last_seen_utc": "2026-03-06T00:27:22.000Z",
+    "tx_count": 2,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0xf7b1524c5914fc90fd86bd7254b1e58e9a2a093625a1f625476ea742ed6b41e7",
+      "0x7d0c8ea1400478c090aaff7195bf895ae92cb5b0959eb8fd31c6db9758e1a23a"
+    ]
+  },
+  {
+    "rank_first_seen": 20,
+    "wallet": "0x0a9c860bff5c71f0ecb59d1df0ac8553c4f8178b",
+    "first_seen_utc": "2026-03-06T15:11:08.000Z",
+    "last_seen_utc": "2026-03-06T15:11:08.000Z",
+    "tx_count": 1,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x77aa1c1be18cf872d3d90984555aea06383d50e0227f3dcb9aec3fed0dc54ed1"
+    ]
+  },
+  {
+    "rank_first_seen": 21,
+    "wallet": "0x420ef173d58f9ac8bc6d37f3394056cdd6661f34",
+    "first_seen_utc": "2026-03-07T13:56:36.000Z",
+    "last_seen_utc": "2026-03-07T14:17:40.000Z",
+    "tx_count": 2,
+    "chains": [
+      "linea"
+    ],
+    "target_types": [
+      "comet"
+    ],
+    "market_keys": [
+      "usdc"
+    ],
+    "tx_hashes": [
+      "0x15afbe1ba9a2b5099b5227b5930ab416396a0177314110d65082211dad1bd853",
+      "0xbdde13482eedf937da15d18e2d03b62db12e760fecc77a38d08ea2b7bc51ad72"
+    ]
+  }
+]

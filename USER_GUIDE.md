@@ -2,6 +2,9 @@
 
 Welcome to **Compound Mini App**! This guide will walk you through everything you need to know to get started with lending and borrowing on Compound Protocol directly from Telegram.
 
+**Live Telegram handle:** `@CompoundDefiBot`  
+**Current product scope:** Compound Mini supports all currently supported Comet chains. For simplicity, some examples in this guide use Sepolia testnet to demonstrate the flow end-to-end.
+
 ## 💻 Recommended Platform
 
 **For the best experience, we strongly recommend using Telegram Web on desktop:**
@@ -31,7 +34,7 @@ Welcome to **Compound Mini App**! This guide will walk you through everything yo
 ### Step 1: Find the App on Telegram
 
 1. Open **Telegram Web** in your browser (recommended) or the Telegram app
-2. In the search bar, type **`@compoundminiapp`**
+2. In the search bar, type **`@CompoundDefiBot`**
 3. Click **open** to launch the app
 
 ![Finding the Mini App](public/userguide/findminiapp.png)
@@ -63,7 +66,7 @@ You have two options to explore the app:
 **Option 2: Connect Wallet**
 - Full functionality with real transactions
 - Supply assets, borrow, and manage positions
-- Requires a wallet with Sepolia testnet ETH
+- For the example flow in this guide, requires a wallet with Sepolia testnet ETH
 
 ![Guest and Connect Modes](public/userguide/guestandconnectmodes.png)
 
@@ -460,4 +463,3 @@ Happy lending and borrowing! 🚀
 ---
 
 **Remember:** This is a testnet application. All assets are test tokens with no real value. Always do your own research and understand the risks before using mainnet DeFi protocols.
-

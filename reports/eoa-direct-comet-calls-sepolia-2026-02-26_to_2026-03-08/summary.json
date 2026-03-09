@@ -1,0 +1,17 @@
+{
+  "generated_at_utc": "2026-03-08T11:11:53.953Z",
+  "window_start_utc": "2026-02-26T11:11:49.420Z",
+  "window_end_utc": "2026-03-08T11:11:49.420Z",
+  "total_eoa_wallets": 3,
+  "total_transactions": 10,
+  "wallets_by_chain": {
+    "sepolia": 3
+  },
+  "failures": [
+    {
+      "chain_key": "sepolia",
+      "chain_name": "Sepolia Testnet",
+      "message": "Error"
+    }
+  ]
+}

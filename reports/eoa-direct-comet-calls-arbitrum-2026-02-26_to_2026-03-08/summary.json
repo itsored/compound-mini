@@ -1,0 +1,15 @@
+{
+  "generated_at_utc": "2026-03-08T11:12:04.158Z",
+  "window_start_utc": "2026-02-26T11:11:59.640Z",
+  "window_end_utc": "2026-03-08T11:11:59.640Z",
+  "total_eoa_wallets": 0,
+  "total_transactions": 0,
+  "wallets_by_chain": {},
+  "failures": [
+    {
+      "chain_key": "arbitrum",
+      "chain_name": "Arbitrum One",
+      "message": "Error"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "generated_at_utc": "2026-03-07T21:32:38.138Z",
+  "window_start_utc": "2026-02-25T21:28:04.173Z",
+  "window_end_utc": "2026-03-07T21:28:04.173Z",
+  "target_total_wallets": 150,
+  "selected_wallet_count": 150,
+  "selected_transaction_count": 366,
+  "selected_wallets_by_chain": {
+    "arbitrum": 28,
+    "base": 32,
+    "linea": 7,
+    "mainnet": 12,
+    "optimism": 22,
+    "sepolia": 33,
+    "scroll": 10,
+    "unichain": 6
+  },
+  "quotas": {
+    "sepolia": 33,
+    "base": 28,
+    "arbitrum": 26,
+    "optimism": 22,
+    "scroll": 10,
+    "linea": 7,
+    "unichain": 6,
+    "mainnet": 12
+  },
+  "chain_candidate_counts": {
+    "sepolia": 33,
+    "base": 36,
+    "arbitrum": 34,
+    "optimism": 30,
+    "scroll": 18,
+    "linea": 15,
+    "unichain": 14,
+    "mainnet": 20
+  },
+  "failures": []
+}

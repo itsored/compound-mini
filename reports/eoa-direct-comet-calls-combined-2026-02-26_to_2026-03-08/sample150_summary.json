@@ -1,0 +1,17 @@
+{
+  "generated_at_utc": "2026-03-08T11:16:12.175Z",
+  "sample_size_wallets": 150,
+  "sample_size_transactions": 282,
+  "base_quotas": {
+    "sepolia": 3,
+    "linea": 39,
+    "polygon": 48,
+    "scroll": 60
+  },
+  "wallets_by_chain": {
+    "sepolia": 3,
+    "linea": 39,
+    "polygon": 49,
+    "scroll": 60
+  }
+}
